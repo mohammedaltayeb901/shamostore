@@ -1,46 +1,10 @@
-{% extends "base.html" %}
-
-{% block title %}الصفحة الرئيسية{% endblock %}
-
-{% block content %}
-<div class="container">
-    <!-- Hero Section (Optional) -->
-    <div class="p-5 mb-4 bg-light rounded-3 text-center">
-        <div class="container-fluid py-5">
-            <h1 class="display-5 fw-bold">أهلاً بك في متجر الألعاب</h1>
-            <p class="fs-4">المكان الأفضل لشحن ألعابك المفضلة مثل PUBG Mobile و Free Fire بأمان وسرعة.</p>
-            <a href="{{ url_for("main.games") }}" class="btn btn-primary btn-lg" type="button">تصفح الألعاب الآن</a>
-        </div>
-    </div>
-
-    <!-- Featured Games Section -->
-    <h2 class="mb-4">ألعاب مميزة</h2>
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
-        {% if games %}
-            {% for game in games %}
-                <div class="col">
-                    <div class="card game-card h-100">
-                        <img src="{{ game.image_url or url_for("static", filename="images/placeholder.png") }}" class="card-img-top" alt="{{ game.name }}">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ game.name }}</h5>
-                            <p class="card-text">{{ game.description|default('') }}</p>
-                            <p class="price">${{ "%.2f"|format(game.price) }}</p>
-                        </div>
-                        <div class="card-footer bg-transparent border-0 p-3">
-                             <a href="{{ url_for("main.game_detail", id=game.id) }}" class="btn btn-outline-primary w-100 mb-2">عرض التفاصيل</a>
-                             <button class="btn btn-primary w-100 add-to-cart-btn" data-game-id="{{ game.id }}">إضافة للسلة</button>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="col-12">
-                <p class="text-center text-muted">لا توجد ألعاب مميزة لعرضها حالياً.</p>
-            </div>
-        {% endif %}
-    </div>
-
-    <!-- Add other sections like Categories, How it works, etc. -->
-
-</div>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flask on Replit</title>
+</head>
+<body>
+    <h1 style="text-align: center; margin-top: 50px;">مرحبًا بك في مشروعي Flask 🎉</h1>
+</body>
+</html>
