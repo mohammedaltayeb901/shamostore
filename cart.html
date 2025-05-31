@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}سلة التسوق{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">سلة التسوق</h1>
+
+    <div id="cart-items-container">
+        <!-- Cart items will be loaded here by JavaScript -->
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">جارٍ التحميل...</span>
+            </div>
+            <p>جارٍ تحميل محتويات السلة...</p>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mt-4" id="cart-summary" style="display: none;">
+        <div class="card-body">
+            <h5 class="card-title">ملخص السلة</h5>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    المجموع الفرعي
+                    <span id="cart-subtotal">$0.00</span>
+                </li>
+                <!-- Add shipping/taxes later if needed -->
+                <li class="list-group-item d-flex justify-content-between align-items-center fw-bold">
+                    المجموع الإجمالي
+                    <span id="cart-total" class="fs-5">$0.00</span>
+                </li>
+            </ul>
+            <div class="d-grid gap-2 mt-3">
+                <a href="{{ url_for("main.checkout") }}" class="btn btn-primary btn-lg" id="checkout-button" style="display: none;">المتابعة للدفع</a>
+                <button class="btn btn-outline-danger" id="clear-cart-button" style="display: none;">إفراغ السلة</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="empty-cart-message" class="text-center my-5" style="display: none;">
+        <h2>سلة التسوق فارغة!</h2>
+        <p>لم تقم بإضافة أي منتجات إلى سلتك بعد.</p>
+        <a href="{{ url_for("main.games") }}" class="btn btn-primary">تصفح الألعاب</a>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    const cartItemsContainer = $("#cart-items-container");
+    const cartSummary = $("#cart-summary");
+    const emptyCartMessage = $("#empty-cart-message");
+    const checkoutButton = $("#checkout-button");
+    const clearCartButton = $("#clear-cart-button");
+    const cartSubtotal = $("#cart-subtotal");
+    const cartTotal = $("#cart-total");
+
+    function renderCart(cartData) {
+        cartItemsContainer.empty(); // Clear previous content or spinner
+        if (cartData && cartData.items && cartData.items.length > 0) {
+            const table = $("<table class=\"table align-middle\"><thead><tr><th>المنتج</th><th>السعر</th><th>الكمية</th><th>الإجمالي</th><th></th></tr></thead><tbody></tbody></table>");
+            const tbody = table.find("tbody");
+
+            cartData.items.forEach(item => {
+                const row = $("<tr>");
+                row.append(`
+                    <td>
+                        <div class=\"d-flex align-items-center\">
+                            <img src=\"${item.image_url || "/static/images/placeholder.png"}\" alt=\"${item.name}\" class=\"cart-item-img rounded\">
+                            <div>
+                                <a href=\"/game/${item.game_id}\" class=\"text-decoration-none text-dark fw-bold\">${item.name}</a>
+                                ${item.game_account_id ? `<br><small class=\"text-muted\">معرف اللاعب: ${item.game_account_id}</small>` : \"\"}
+                            </div>
+                        </div>
+                    </td>
+                    <td>$${item.price.toFixed(2)}</td>
+                    <td>
+                        <input type=\"number\" class=\"form-control form-control-sm quantity-input\" value=\"${item.quantity}\" min=\"1\" data-item-id=\"${item.item_id}\" style=\"width: 70px;\">
+                    </td>
+                    <td>$${item.item_total.toFixed(2)}</td>
+                    <td>
+                        <button class=\"btn btn-sm btn-outline-danger remove-item-btn\" data-item-id=\"${item.item_id}\"><i class=\"fas fa-trash-alt\"></i></button>
+                    </td>
+                `);
+                tbody.append(row);
+            });
+
+            cartItemsContainer.append(table);
+            cartSubtotal.text(`$${cartData.total.toFixed(2)}`);
+            cartTotal.text(`$${cartData.total.toFixed(2)}`);
+            cartSummary.show();
+            checkoutButton.show();
+            clearCartButton.show();
+            emptyCartMessage.hide();
+        } else {
+            cartItemsContainer.empty();
+            cartSummary.hide();
+            checkoutButton.hide();
+            clearCartButton.hide();
+            emptyCartMessage.show();
+        }
+        // Update navbar count (assuming window.updateCartCount exists from main.js)
+        if(window.updateCartCount) {
+            window.updateCartCount();
+        }
+    }
+
+    function loadCart() {
+        cartItemsContainer.html(
+            `<div class=\"text-center my-5\"><div class=\"spinner-border text-primary\" role=\"status\"><span class=\"visually-hidden\">جارٍ التحميل...</span></div><p>جارٍ تحميل محتويات السلة...</p></div>`
+        );
+        cartSummary.hide();
+        emptyCartMessage.hide();
+        checkoutButton.hide();
+        clearCartButton.hide();
+
+        $.ajax({
+            url: "/api/cart",
+            type: "GET",
+            success: function(response) {
+                if (response.success) {
+                    renderCart(response.data);
+                } else {
+                    cartItemsContainer.html(`<div class=\"alert alert-danger\">${response.message || \"حدث خطأ أثناء تحميل السلة.\"}</div>`);
+                    emptyCartMessage.show();
+                }
+            },
+            error: function() {
+                cartItemsContainer.html("<div class=\"alert alert-danger\">فشل الاتصال بالخادم لتحميل السلة.</div>");
+                emptyCartMessage.show();
+            }
+        });
+    }
+
+    // Load cart on page ready
+    loadCart();
+
+    // Event listener for quantity change
+    cartItemsContainer.on("change", ".quantity-input", function() {
+        const itemId = $(this).data("item-id");
+        const quantity = parseInt($(this).val());
+
+        if (isNaN(quantity) || quantity < 1) {
+            // Optionally revert or show error
+            $(this).val(1); // Revert to 1 for now
+            alert("الكمية يجب أن تكون 1 على الأقل.");
+            return;
+        }
+
+        $.ajax({
+            url: `/api/cart/update/${itemId}`,
+            type: "PUT",
+            contentType: "application/json",
+            data: JSON.stringify({ quantity: quantity }),
+            success: function(response) {
+                if (response.success) {
+                    loadCart(); // Reload the cart to show updated totals and items
+                } else {
+                    alert("Error: " + response.message);
+                    // Optionally revert the quantity input
+                    loadCart(); // Reload to be safe
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = "حدث خطأ أثناء تحديث الكمية.";
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                alert("Error: " + errorMsg);
+                loadCart(); // Reload to revert changes
+            }
+        });
+    });
+
+    // Event listener for remove button
+    cartItemsContainer.on("click", ".remove-item-btn", function() {
+        const itemId = $(this).data("item-id");
+        if (confirm("هل أنت متأكد من رغبتك في إزالة هذا المنتج من السلة؟")) {
+            $.ajax({
+                url: `/api/cart/remove/${itemId}`,
+                type: "DELETE",
+                success: function(response) {
+                    if (response.success) {
+                        loadCart(); // Reload the cart
+                    } else {
+                        alert("Error: " + response.message);
+                    }
+                },
+                error: function(xhr) {
+                    let errorMsg = "حدث خطأ أثناء إزالة المنتج.";
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    alert("Error: " + errorMsg);
+                }
+            });
+        }
+    });
+
+    // Event listener for clear cart button
+    clearCartButton.on("click", function() {
+        if (confirm("هل أنت متأكد من رغبتك في إفراغ سلة التسوق بالكامل؟")) {
+            $.ajax({
+                url: "/api/cart/clear",
+                type: "DELETE",
+                success: function(response) {
+                    if (response.success) {
+                        loadCart(); // Reload the cart (will show empty message)
+                    } else {
+                        alert("Error: " + response.message);
+                    }
+                },
+                error: function(xhr) {
+                    let errorMsg = "حدث خطأ أثناء إفراغ السلة.";
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    alert("Error: " + errorMsg);
+                }
+            });
+        }
+    });
+
+});
+</script>
+{% endblock %}

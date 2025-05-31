@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_formhelpers.html" import render_field %}
+
+{% block title %}إنشاء حساب جديد{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h2 class="card-title mb-0">إنشاء حساب جديد</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for("auth.register") }}" novalidate>
+                    {{ form.hidden_tag() }}
+                    {{ render_field(form.username, class="form-control") }}
+                    {{ render_field(form.email, class="form-control") }}
+                    {{ render_field(form.password, class="form-control") }}
+                    {{ render_field(form.confirm_password, class="form-control") }}
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <small>لديك حساب بالفعل؟ <a href="{{ url_for("auth.login") }}">قم بتسجيل الدخول</a></small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

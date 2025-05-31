@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}طلباتي{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">سجل طلباتي</h1>
+
+    <div id="orders-list-container">
+        <!-- Orders will be loaded here by JavaScript -->
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">جارٍ التحميل...</span>
+            </div>
+            <p>جارٍ تحميل سجل الطلبات...</p>
+        </div>
+    </div>
+
+    <div id="no-orders-message" class="text-center my-5" style="display: none;">
+        <h2>لم تقم بأي طلبات بعد.</h2>
+        <a href="{{ url_for("main.games") }}" class="btn btn-primary">ابدأ التسوق الآن</a>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    const ordersContainer = $("#orders-list-container");
+    const noOrdersMessage = $("#no-orders-message");
+
+    function renderOrders(ordersData) {
+        ordersContainer.empty(); // Clear spinner
+        if (ordersData && ordersData.length > 0) {
+            const table = $("<table class=\"table table-hover align-middle\"><thead><tr><th>رقم الطلب</th><th>التاريخ</th><th>الحالة</th><th>المجموع</th><th>عدد المنتجات</th><th></th></tr></thead><tbody></tbody></table>");
+            const tbody = table.find("tbody");
+
+            ordersData.forEach(order => {
+                // Format date nicely (requires a library like Moment.js or use Intl.DateTimeFormat)
+                let formattedDate = new Date(order.created_at).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" });
+                let statusBadge = "";
+                switch(order.status) {
+                    case "completed": statusBadge = "<span class=\"badge bg-success\">مكتمل</span>"; break;
+                    case "processing": statusBadge = "<span class=\"badge bg-info\">قيد المعالجة</span>"; break;
+                    case "pending": statusBadge = "<span class=\"badge bg-warning text-dark\">معلق</span>"; break;
+                    case "cancelled": statusBadge = "<span class=\"badge bg-danger\">ملغي</span>"; break;
+                    case "failed_fulfillment": statusBadge = "<span class=\"badge bg-danger\">فشل التسليم</span>"; break;
+                    default: statusBadge = `<span class=\"badge bg-secondary\">${order.status}</span>`;
+                }
+
+                const row = $("<tr>");
+                row.append(`<td>#${order.id}</td>`);
+                row.append(`<td>${formattedDate}</td>`);
+                row.append(`<td>${statusBadge}</td>`);
+                row.append(`<td>$${order.total_amount.toFixed(2)}</td>`);
+                row.append(`<td>${order.items_count}</td>`);
+                row.append(`<td><a href=\"/order/${order.id}\" class=\"btn btn-sm btn-outline-primary\">عرض التفاصيل</a></td>`);
+                tbody.append(row);
+            });
+            ordersContainer.append(table);
+            noOrdersMessage.hide();
+        } else {
+            noOrdersMessage.show();
+        }
+    }
+
+    function loadOrders() {
+        ordersContainer.html(
+            `<div class=\"text-center my-5\"><div class=\"spinner-border text-primary\" role=\"status\"><span class=\"visually-hidden\">جارٍ التحميل...</span></div><p>جارٍ تحميل سجل الطلبات...</p></div>`
+        );
+        noOrdersMessage.hide();
+
+        $.ajax({
+            url: "/api/orders",
+            type: "GET",
+            success: function(response) {
+                if (response.success) {
+                    renderOrders(response.data);
+                } else {
+                    ordersContainer.html(`<div class=\"alert alert-danger\">${response.message || \"حدث خطأ أثناء تحميل الطلبات.\"}</div>`);
+                    noOrdersMessage.show(); // Show empty message on error too
+                }
+            },
+            error: function() {
+                ordersContainer.html("<div class=\"alert alert-danger\">فشل الاتصال بالخادم لتحميل الطلبات.</div>");
+                noOrdersMessage.show();
+            }
+        });
+    }
+
+    // Load orders on page ready
+    loadOrders();
+
+});
+</script>
+{% endblock %}

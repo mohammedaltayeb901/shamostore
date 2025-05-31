@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة تحكم المسؤول{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Sidebar -->
+    <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse admin-sidebar">
+        <div class="position-sticky pt-3">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == "admin.admin_index" %}active{% endif %}" aria-current="page" href="{{ url_for("admin.admin_index") }}">
+                        <i class="fas fa-tachometer-alt fa-fw me-2"></i>
+                        لوحة التحكم
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint in ["admin.admin_games", "admin.admin_edit_game"] %}active{% endif %}" href="{{ url_for("admin.admin_games") }}">
+                        <i class="fas fa-gamepad fa-fw me-2"></i>
+                        إدارة الألعاب
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == "admin.admin_orders" %}active{% endif %}" href="{{ url_for("admin.admin_orders") }}">
+                        <i class="fas fa-file-invoice-dollar fa-fw me-2"></i>
+                        إدارة الطلبات
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == "admin.admin_users" %}active{% endif %}" href="{{ url_for("admin.admin_users") }}">
+                        <i class="fas fa-users fa-fw me-2"></i>
+                        إدارة المستخدمين
+                    </a>
+                </li>
+                <!-- Add more admin links as needed -->
+            </ul>
+
+            <!-- Optional: Separator and other sections -->
+            <!-- 
+            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                <span>تقارير</span>
+                <a class="link-secondary" href="#" aria-label="Add a new report">
+                    <i class="fas fa-plus-circle"></i>
+                </a>
+            </h6>
+            <ul class="nav flex-column mb-2">
+                <li class="nav-item">
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-chart-line fa-fw me-2"></i>
+                        تقرير المبيعات
+                    </a>
+                </li>
+            </ul>
+            -->
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h1 class="h2">{% block admin_title %}لوحة التحكم{% endblock %}</h1>
+            <!-- Optional: Add buttons or controls here -->
+        </div>
+        
+        {% block admin_content %}
+        <!-- Admin page content goes here -->
+        {% endblock %}
+    </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }} {# Include scripts from base.html #}
+<!-- Add admin-specific scripts here if needed -->
+{% endblock %}

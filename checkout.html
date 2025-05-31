@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% from "_formhelpers.html" import render_field %}
+
+{% block title %}الدفع{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">إتمام عملية الشراء</h1>
+
+    <div class="row">
+        <!-- Order Summary -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0">ملخص الطلب</h4>
+                </div>
+                <div class="card-body" id="order-summary-container">
+                    <!-- Order summary will be loaded here -->
+                    <div class="text-center my-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">جارٍ التحميل...</span>
+                        </div>
+                        <p>جارٍ تحميل ملخص الطلب...</p>
+                    </div>
+                </div>
+                <div class="card-footer fw-bold fs-5 d-flex justify-content-between">
+                    <span>المجموع الإجمالي:</span>
+                    <span id="order-total-summary">$0.00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Checkout Form -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0">معلومات الدفع</h4>
+                </div>
+                <div class="card-body">
+                    <form id="checkout-form" method="POST" action="{{ url_for("main.checkout") }}" novalidate>
+                        {{ form.hidden_tag() }} 
+                        
+                        <!-- Display Cart Items (Optional but helpful) -->
+                        <div id="checkout-cart-items" class="mb-3" style="max-height: 200px; overflow-y: auto;">
+                            <!-- Simplified cart items view -->
+                        </div>
+                        
+                        <hr>
+                        
+                        {{ render_field(form.payment_method, class="form-select") }}
+                        
+                        <!-- Placeholder for Payment Gateway Integration -->
+                        <div id="payment-gateway-placeholder" class="mt-3 p-3 border rounded bg-light text-muted">
+                            سيتم هنا عرض واجهة بوابة الدفع (مثل Stripe أو PayPal) في تطبيق حقيقي.
+                            <br><small>لأغراض العرض التوضيحي، سيتم محاكاة عملية الدفع عند الضغط على زر "إتمام الشراء".</small>
+                        </div>
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submit-checkout">إتمام الشراء</button>
+                        </div>
+                    </form>
+                    <div id="checkout-error" class="alert alert-danger mt-3" style="display: none;"></div>
+                    <div id="checkout-success" class="alert alert-success mt-3" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    const orderSummaryContainer = $("#order-summary-container");
+    const orderTotalSummary = $("#order-total-summary");
+    const checkoutCartItems = $("#checkout-cart-items");
+    const checkoutError = $("#checkout-error");
+    const checkoutSuccess = $("#checkout-success");
+    const submitButton = $("#submit-checkout");
+
+    function loadOrderSummary() {
+        orderSummaryContainer.html(
+            `<div class=\"text-center my-3\"><div class=\"spinner-border text-primary\" role=\"status\"><span class=\"visually-hidden\">جارٍ التحميل...</span></div><p>جارٍ تحميل ملخص الطلب...</p></div>`
+        );
+        checkoutCartItems.empty();
+
+        $.ajax({
+            url: "/api/cart", // Fetch cart data for summary
+            type: "GET",
+            success: function(response) {
+                if (response.success && response.data && response.data.items && response.data.items.length > 0) {
+                    orderSummaryContainer.empty();
+                    checkoutCartItems.empty();
+                    const summaryList = $("<ul class=\"list-group list-group-flush\"></ul>");
+                    const checkoutItemsList = $("<ul class=\"list-group list-group-flush\"><li class=\"list-group-item active bg-secondary border-secondary\">محتويات السلة</li></ul>");
+
+                    response.data.items.forEach(item => {
+                        summaryList.append(`
+                            <li class=\"list-group-item d-flex justify-content-between align-items-center\">
+                                <div>
+                                    ${item.name} (x${item.quantity})
+                                    ${item.game_account_id ? `<br><small class=\"text-muted\">ID: ${item.game_account_id}</small>` : \"\"}
+                                </div>
+                                <span>$${item.item_total.toFixed(2)}</span>
+                            </li>
+                        `);
+                        checkoutItemsList.append(`
+                            <li class=\"list-group-item d-flex justify-content-between align-items-center\">
+                                <small>${item.name} (x${item.quantity})</small>
+                                <small>$${item.item_total.toFixed(2)}</small>
+                            </li>
+                        `);
+                    });
+                    orderSummaryContainer.append(summaryList);
+                    checkoutCartItems.append(checkoutItemsList);
+                    orderTotalSummary.text(`$${response.data.total.toFixed(2)}`);
+                    submitButton.prop("disabled", false);
+                } else {
+                    // Cart is empty, redirect or show message
+                    orderSummaryContainer.html("<p class=\"text-danger\">سلة التسوق فارغة. لا يمكنك المتابعة للدفع.</p>");
+                    orderTotalSummary.text("$0.00");
+                    submitButton.prop("disabled", true);
+                    // Optionally redirect back to cart page
+                    // window.location.href = "{{ url_for("main.view_cart") }}";
+                }
+            },
+            error: function() {
+                orderSummaryContainer.html("<p class=\"text-danger\">حدث خطأ أثناء تحميل ملخص الطلب.</p>");
+                orderTotalSummary.text("$0.00");
+                submitButton.prop("disabled", true);
+            }
+        });
+    }
+
+    // Load summary on page ready
+    loadOrderSummary();
+
+    // Handle checkout form submission
+    $("#checkout-form").on("submit", function(event) {
+        event.preventDefault(); // Prevent default form submission
+        checkoutError.hide().text("");
+        checkoutSuccess.hide().text("");
+        submitButton.prop("disabled", true).html("<span class=\"spinner-border spinner-border-sm\" role=\"status\" aria-hidden=\"true\"></span> جاري المعالجة...");
+
+        const paymentMethod = $("#payment_method").val();
+
+        $.ajax({
+            url: "/api/checkout",
+            type: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ payment_method: paymentMethod }),
+            success: function(response) {
+                if (response.success) {
+                    checkoutSuccess.text("تم إتمام عملية الشراء بنجاح! رقم طلبك هو: " + response.order_id + ". جاري تحويلك...").show();
+                    // Redirect to order confirmation page after a short delay
+                    setTimeout(function() {
+                        window.location.href = "{{ url_for("main.order_confirmation") }}?order_id=" + response.order_id;
+                    }, 3000); // 3 seconds delay
+                    // Update cart count in navbar (should be 0 now)
+                    if(window.updateCartCount) {
+                        window.updateCartCount();
+                    }
+                } else {
+                    checkoutError.text(response.message || "حدث خطأ غير متوقع أثناء عملية الدفع.").show();
+                    submitButton.prop("disabled", false).text("إتمام الشراء");
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = "فشل الاتصال بالخادم لإتمام عملية الشراء.";
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                checkoutError.text(errorMsg).show();
+                submitButton.prop("disabled", false).text("إتمام الشراء");
+            }
+        });
+    });
+
+});
+</script>
+{% endblock %}

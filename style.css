@@ -1,0 +1,92 @@
+/* Custom Styles for Game Shipping Site */
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-top: 56px; /* Adjust based on navbar height */
+}
+
+main {
+    flex: 1;
+}
+
+.footer {
+    background-color: #f8f9fa;
+}
+
+/* Game Card Styles */
+.game-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    height: 100%; /* Ensure cards in a row have the same height */
+    display: flex;
+    flex-direction: column;
+}
+
+.game-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.game-card .card-img-top {
+    height: 200px; /* Fixed height for images */
+    object-fit: cover; /* Scale image nicely */
+}
+
+.game-card .card-body {
+    flex-grow: 1; /* Allow body to grow and push footer down */
+    display: flex;
+    flex-direction: column;
+}
+
+.game-card .card-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.game-card .card-text {
+    flex-grow: 1; /* Allow text to take available space */
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.game-card .price {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #0d6efd; /* Bootstrap primary color */
+}
+
+.game-card .btn-primary {
+    margin-top: auto; /* Push button to the bottom */
+}
+
+/* Cart Styles */
+.cart-item-img {
+    max-width: 80px;
+    height: auto;
+    margin-right: 15px;
+}
+
+/* Admin Styles */
+.admin-sidebar {
+    height: 100vh;
+    position: sticky;
+    top: 56px; /* Adjust based on navbar height */
+    background-color: #f8f9fa;
+    padding-top: 1rem;
+}
+
+/* Utility Classes */
+.price {
+    font-weight: bold;
+    color: #28a745; /* Green color for price */
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .admin-sidebar {
+        height: auto;
+        position: relative;
+        top: 0;
+    }
+}

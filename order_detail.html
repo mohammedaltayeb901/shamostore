@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}تفاصيل الطلب #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>تفاصيل الطلب <span class="text-muted">#{{ order.id }}</span></h1>
+        <a href="{{ url_for("main.orders") }}" class="btn btn-outline-secondary">العودة إلى سجل الطلبات</a>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">ملخص الطلب</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>رقم الطلب:</strong> #{{ order.id }}</p>
+                    <p><strong>تاريخ الطلب:</strong> {{ order.created_at.strftime("%Y-%m-%d %H:%M") }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>الحالة:</strong> 
+                        {% set status_badge = {
+                            "completed": "success",
+                            "processing": "info",
+                            "pending": "warning",
+                            "cancelled": "danger",
+                            "failed_fulfillment": "danger"
+                        } %}
+                        <span class="badge bg-{{ status_badge.get(order.status, "secondary") }}">{{ order.status }}</span>
+                    </p>
+                    <p><strong>المجموع الإجمالي:</strong> <span class="fw-bold">${{ "%.2f"|format(order.total_amount) }}</span></p>
+                </div>
+            </div>
+            {% if order.payment %}
+            <hr>
+            <h6>معلومات الدفع</h6>
+            <p><strong>طريقة الدفع:</strong> {{ order.payment.payment_method }}</p>
+            <p><strong>حالة الدفع:</strong> 
+                 <span class="badge bg-{{ status_badge.get(order.payment.status, "secondary") }}">{{ order.payment.status }}</span>
+            </p>
+            {% if order.payment.transaction_id %}
+            <p><strong>معرف المعاملة:</strong> {{ order.payment.transaction_id }}</p>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">المنتجات المطلوبة</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>المنتج</th>
+                            <th>السعر</th>
+                            <th>الكمية</th>
+                            <th>معرف اللاعب (إن وجد)</th>
+                            <th>الكود الرقمي (إن وجد)</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="{{ item.game.image_url or url_for("static", filename="images/placeholder.png") }}" alt="{{ item.game.name }}" class="cart-item-img rounded me-3">
+                                        <a href="{{ url_for("main.game_detail", id=item.game_id) }}" class="text-decoration-none text-dark fw-bold">{{ item.game.name }}</a>
+                                    </div>
+                                </td>
+                                <td>${{ "%.2f"|format(item.price) }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.game_account_id or "-" }}</td>
+                                <td>
+                                    {% if item.code %}
+                                        <code>{{ item.code }}</code>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ status_badge.get(item.status, "secondary") }}">{{ item.status }}</span>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">لا توجد منتجات في هذا الطلب.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

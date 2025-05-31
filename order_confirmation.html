@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}تأكيد الطلب{% endblock %}
+
+{% block content %}
+<div class="container text-center">
+    <div class="py-5">
+        <i class="fas fa-check-circle fa-5x text-success mb-4"></i>
+        <h1 class="display-5">شكراً لك، تم استلام طلبك بنجاح!</h1>
+        {% set order_id = request.args.get("order_id") %}
+        {% if order_id %}
+            <p class="lead">رقم طلبك هو: <strong>#{{ order_id }}</strong></p>
+            <p>لقد أرسلنا تفاصيل الطلب إلى بريدك الإلكتروني المسجل.</p>
+            <p>يمكنك متابعة حالة طلبك من خلال صفحة <a href="{{ url_for("main.orders") }}">طلباتي</a>.</p>
+        {% else %}
+            <p class="lead">لقد تم تقديم طلبك بنجاح.</p>
+            <p>يمكنك مراجعة تفاصيل طلباتك في صفحة <a href="{{ url_for("main.orders") }}">طلباتي</a>.</p>
+        {% endif %}
+        <hr class="my-4">
+        <a href="{{ url_for("main.games") }}" class="btn btn-primary btn-lg">متابعة التسوق</a>
+        {% if order_id %}
+            <a href="{{ url_for("main.order_detail", id=order_id) }}" class="btn btn-outline-secondary btn-lg">عرض تفاصيل الطلب</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

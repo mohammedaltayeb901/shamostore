@@ -1,0 +1,58 @@
+{% extends "admin/base.html" %}
+
+{% block admin_title %}لوحة التحكم{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <p>أهلاً بك في لوحة تحكم المسؤول.</p>
+    
+    <!-- Add dashboard widgets here -->
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">إجمالي المستخدمين</h5>
+                    <!-- Placeholder for dynamic data -->
+                    <p class="card-text fs-3">{{ User.query.count() }}</p> 
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">إجمالي الألعاب النشطة</h5>
+                    <!-- Placeholder for dynamic data -->
+                    <p class="card-text fs-3">{{ Game.query.filter_by(is_active=True).count() }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">إجمالي الطلبات</h5>
+                    <!-- Placeholder for dynamic data -->
+                    <p class="card-text fs-3">{{ Order.query.count() }}</p>
+                </div>
+            </div>
+        </div>
+        <!-- Add more stats like pending orders, total revenue etc. -->
+    </div>
+
+    <!-- Quick Actions -->
+    <h4 class="mt-4">إجراءات سريعة</h4>
+    <div class="list-group">
+        <a href="{{ url_for("admin.admin_games") }}" class="list-group-item list-group-item-action">إضافة لعبة جديدة</a>
+        <a href="{{ url_for("admin.admin_orders") }}" class="list-group-item list-group-item-action">مراجعة الطلبات المعلقة</a>
+        <!-- Add more actions -->
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{# Import necessary models for counts - This should ideally be passed from the route #}
+{% set User = models.User %}
+{% set Game = models.Game %}
+{% set Order = models.Order %}
+{% endblock %}
