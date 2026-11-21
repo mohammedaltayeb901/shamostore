@@ -101,12 +101,23 @@ class User(UserMixin, db.Model):
         return to_money(self.balance or 0)
 
     def wallet_move(self, amount, kind, description, order_id=None, topup_id=None):
-        """Apply a signed wallet movement and write the ledger row."""
+        """Apply a signed wallet movement and write the ledger row.
+
+        The balance is updated with a single conditional SQL statement so two
+        concurrent purchases cannot both spend the same funds: the database
+        serialises the writes and the overspend guard fails the second one.
+        """
         amount = to_money(amount)
-        new_balance = to_money(self.available_balance + amount)
-        if new_balance < 0:
+        updated = (
+            db.session.query(User)
+            .filter(User.id == self.id, User.balance + amount >= 0)
+            .update({User.balance: User.balance + amount}, synchronize_session=False)
+        )
+        if updated != 1:
             raise InsufficientBalance
-        self.balance = new_balance
+
+        db.session.expire(self)
+        new_balance = self.available_balance
         entry = WalletTransaction(
             user=self,
             amount=amount,

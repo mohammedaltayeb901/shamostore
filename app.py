@@ -25,6 +25,11 @@ def create_app(config_class=Config):
     database_uri = app.config["SQLALCHEMY_DATABASE_URI"]
     if database_uri.startswith("sqlite:///") and ":memory:" not in database_uri:
         os.makedirs(app.instance_path, exist_ok=True)
+    if database_uri.startswith("sqlite"):
+        # Let a waiting writer retry for a while instead of failing the request.
+        engine_options = dict(app.config.get("SQLALCHEMY_ENGINE_OPTIONS") or {})
+        engine_options["connect_args"] = {"timeout": 15}
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -86,6 +91,14 @@ def create_app(config_class=Config):
 
         init_database(app)
         print("تم تهيئة قاعدة البيانات بنجاح.")
+
+    @app.cli.command("seed-demo")
+    def seed_demo_command():
+        """Create the demo customer with credit and sample orders (development only)."""
+        from seed import seed_demo
+
+        seed_demo(app)
+        print("تم إنشاء الحساب التجريبي: player@shamostore.com")
 
     @app.cli.command("create-admin")
     def create_admin_command():

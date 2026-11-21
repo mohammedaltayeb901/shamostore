@@ -25,6 +25,9 @@ class Config:
     ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL") or "admin@shamostore.com"
     ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD") or "Admin@12345"
 
+    # الحساب التجريبي يُنشأ فقط بأمر "flask seed-demo" ويمكن تعطيله من البيئة.
+    ENABLE_DEMO_ACCOUNT = os.environ.get("ENABLE_DEMO_ACCOUNT", "true").lower() != "false"
+
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     REMEMBER_COOKIE_HTTPONLY = True

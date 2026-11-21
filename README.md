@@ -30,7 +30,8 @@ SQLite افتراضية قابلة للاستبدال بأي قاعدة عبر `
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 cp .env.example .env            # ثم عدّل SECRET_KEY وبيانات المسؤول
-.venv/bin/flask --app app init-db
+.venv/bin/flask --app app init-db      # الجداول + كتالوج الألعاب + حساب المسؤول
+.venv/bin/flask --app app seed-demo   # اختياري: عميل تجريبي برصيد وسجل طلبات
 .venv/bin/python wsgi.py
 ```
 
@@ -45,7 +46,11 @@ cp .env.example .env            # ثم عدّل SECRET_KEY وبيانات الم
 | الدور | البريد | كلمة المرور |
 | --- | --- | --- |
 | مسؤول | `admin@shamostore.com` | `Admin@12345` |
-| عميل تجريبي | `player@shamostore.com` | `Player@12345` |
+| عميل تجريبي (بعد `seed-demo` فقط) | `player@shamostore.com` | `Player@12345` |
+
+`init-db` لا ينشئ أي حساب عميل ممول، حتى لا يحصل تثبيت إنتاجي على دخول تجريبي معروف.
+الحساب التجريبي وطلباته تأتي من أمر `seed-demo` المنفصل، ويمكن تعطيله بـ
+`ENABLE_DEMO_ACCOUNT=false`.
 
 غيّر كلمة مرور المسؤول قبل أي استخدام حقيقي (`flask --app app create-admin` يحدّثها من
 `ADMIN_PASSWORD`).
@@ -69,6 +74,7 @@ cp .env.example .env            # ثم عدّل SECRET_KEY وبيانات الم
 | `STORE_NAME` | اسم المتجر الظاهر في الواجهة |
 | `CURRENCY_SYMBOL` | رمز العملة، افتراضياً `$` |
 | `ADMIN_USERNAME` / `ADMIN_EMAIL` / `ADMIN_PASSWORD` | حساب المسؤول الذي ينشئه `init-db` |
+| `ENABLE_DEMO_ACCOUNT` | `false` يمنع أمر `seed-demo` من إنشاء الحساب التجريبي |
 
 ## هيكل المشروع
 
@@ -88,6 +94,7 @@ tests/                 اختبارات pytest
 
 ## ملاحظات قبل الإطلاق
 
+- لا تشغّل `seed-demo` على الإنتاج، فهو ينشئ عميلاً برصيد مجاني.
 - ادفع طرق الدفع إلى بوابة حقيقية (مثل Stripe أو بوابة محلية) بدل التحويل اليدوي:
   نقطة التجريد جاهزة في `services.approve_topup` ولا تحتاج تغيير الواجهات.
 - فعّل HTTPS، واضبط `SESSION_COOKIE_SECURE = True` في `config.py`.

@@ -128,6 +128,11 @@ CATALOGUE = [
 
 
 def init_database(app):
+    """Create the tables, the catalogue, and the admin account only.
+
+    No customer account is created here, so a production install never ships a
+    funded login. Demo data lives in seed_demo() and is opt-in.
+    """
     db.create_all()
 
     email = app.config["ADMIN_EMAIL"].strip().lower()
@@ -169,9 +174,17 @@ def init_database(app):
                     )
                 )
 
-    demo = User.query.filter_by(email="player@shamostore.com").first()
+    db.session.commit()
+
+
+def seed_demo(app, email="player@shamostore.com"):
+    """Create a demo customer with credit and sample history (development only)."""
+    if not app.config.get("ENABLE_DEMO_ACCOUNT", True):
+        raise RuntimeError("الحساب التجريبي معطّل (ENABLE_DEMO_ACCOUNT=false).")
+
+    demo = User.query.filter_by(email=email).first()
     if demo is None:
-        demo = create_user("player", "player@shamostore.com", "Player@12345")
+        demo = create_user("player", email, "Player@12345")
         db.session.add(demo)
         db.session.flush()
         demo.wallet_move(Decimal("25.00"), "topup", "رصيد تجريبي للعرض")
@@ -216,6 +229,7 @@ def init_database(app):
             )
 
     db.session.commit()
+    return demo
 
 
 if __name__ == "__main__":
@@ -224,4 +238,5 @@ if __name__ == "__main__":
     application = create_app()
     with application.app_context():
         init_database(application)
+        seed_demo(application)
         print("Seed complete.")

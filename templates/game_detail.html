@@ -60,7 +60,11 @@
       <textarea class="textarea" id="note" name="note" maxlength="300" placeholder="أي تفاصيل إضافية تريد إخبارنا بها"></textarea>
     </div>
 
-    <button class="btn btn--primary btn--block" type="submit">متابعة الدفع</button>
+    {% if current_user.is_authenticated %}
+      <button class="btn btn--primary btn--block" type="submit">متابعة الدفع</button>
+    {% else %}
+      <a class="btn btn--primary btn--block" href="{{ url_for('auth.login', next=request.path) }}">سجّل الدخول للمتابعة</a>
+    {% endif %}
   </form>
 
   <aside class="sticky-panel stack">

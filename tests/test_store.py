@@ -148,3 +148,121 @@ def test_admin_can_adjust_balance(app, user):
     )
     db.session.refresh(user)
     assert user.available_balance == Decimal("7.50")
+
+
+def test_topup_cannot_be_credited_twice(app, user):
+    from types import SimpleNamespace
+
+    import pytest
+    from services import StoreError, approve_topup
+
+    client = app.test_client()
+    login(client, email=user.email)
+    client.post(
+        "/wallet/topup",
+        data={"amount": "20.00", "method": "zain_cash", "reference": "TRX-777", "note": ""},
+        follow_redirects=True,
+    )
+    request_row = TopUpRequest.query.first()
+
+    logout(client)
+    admin_login(client)
+    client.post(
+        f"/admin/topups/{request_row.id}/review",
+        data={"action": "approve", "admin_note": ""},
+        follow_redirects=True,
+    )
+    client.post(
+        f"/admin/topups/{request_row.id}/review",
+        data={"action": "approve", "admin_note": ""},
+        follow_redirects=True,
+    )
+
+    db.session.refresh(user)
+    assert user.available_balance == Decimal("20.00")
+    assert WalletTransaction.query.filter_by(user_id=user.id, kind="topup").count() == 1
+
+    admin = User.query.filter_by(is_admin=True).first()
+    with pytest.raises(StoreError):
+        approve_topup(request_row, admin)
+
+    stale = SimpleNamespace(id=request_row.id, status="pending", amount=Decimal("20.00"), user_id=user.id)
+    with pytest.raises(StoreError):
+        approve_topup(stale, admin)
+    db.session.refresh(user)
+    assert user.available_balance == Decimal("20.00")
+
+
+def test_rejected_order_refunds_only_once(app, user, package):
+    from types import SimpleNamespace
+
+    import pytest
+    from services import StoreError, update_order_status
+
+    _fund(user, "10.00")
+    order = place_order(user, package, "5123456789")
+
+    admin = User.query.filter_by(is_admin=True).first()
+    update_order_status(order, "rejected", "معرّف غير صحيح", admin)
+    assert update_order_status(order, "rejected", "مرة أخرى", admin).status == "rejected"
+
+    db.session.refresh(user)
+    assert user.available_balance == Decimal("10.00")
+    assert WalletTransaction.query.filter_by(user_id=user.id, kind="refund").count() == 1
+
+    stale = SimpleNamespace(
+        id=order.id,
+        status="pending",
+        delivered_at=None,
+        code=order.code,
+        user_id=user.id,
+        price=order.price,
+    )
+    with pytest.raises(StoreError):
+        update_order_status(stale, "rejected", "طلب متزامن قديم", admin)
+
+    db.session.refresh(user)
+    assert user.available_balance == Decimal("10.00")
+
+
+def test_wallet_guard_uses_stored_balance_not_stale_memory(app, user):
+    import pytest
+    from models import InsufficientBalance
+
+    _fund(user, "10.00")
+    assert user.available_balance == Decimal("10.00")
+
+    # Another request spent the money after this instance was loaded.
+    db.session.query(User).filter_by(id=user.id).update(
+        {User.balance: Decimal("1.00")}, synchronize_session=False
+    )
+    with pytest.raises(InsufficientBalance):
+        user.wallet_move(Decimal("-4.79"), "purchase", "شراء بمحاولة متزامنة")
+    db.session.rollback()
+
+
+def test_checkout_get_after_session_expiry_redirects(app, user):
+    client = app.test_client()
+    login(client, email=user.email)
+    response = client.get("/orders/checkout", follow_redirects=True)
+    assert response.status_code == 200
+    assert "انتهت الجلسة" in response.get_data(as_text=True)
+
+
+def test_anonymous_game_page_offers_login(seeded_client):
+    response = seeded_client.get("/games/pubg-mobile")
+    body = response.get_data(as_text=True)
+    assert "سجّل الدخول للمتابعة" in body
+    assert "متابعة الدفع" not in body
+
+
+def test_admin_sees_customer_note_on_order(app, user, package):
+    _fund(user, "10.00")
+    place_order(user, package, "5123456789", note="سيرفر جينشين: Asia")
+
+    admin_client = app.test_client()
+    admin_login(admin_client)
+    response = admin_client.get("/admin/orders")
+    body = response.get_data(as_text=True)
+    assert "5123456789" in body
+    assert "سيرفر جينشين: Asia" in body

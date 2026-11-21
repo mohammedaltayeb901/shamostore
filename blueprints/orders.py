@@ -2,10 +2,19 @@ from flask import Blueprint, abort, flash, redirect, render_template, url_for
 from flask_login import current_user, login_required
 
 from forms import CheckoutForm, PlaceOrderForm
-from models import Game, Order, TopUpPackage
+from models import Order, TopUpPackage
 from services import StoreError, place_order
 
 orders_bp = Blueprint("orders", __name__)
+
+
+@orders_bp.route("/orders/checkout")
+@login_required
+def restart_checkout():
+    """Getting here by GET means a session expired mid-checkout: send the
+    customer back to the game page instead of failing with 405."""
+    flash("انتهت الجلسة قبل تأكيد الطلب. اختر الباقة مرة أخرى.", "warning")
+    return redirect(url_for("shop.games"))
 
 
 @orders_bp.route("/orders")
