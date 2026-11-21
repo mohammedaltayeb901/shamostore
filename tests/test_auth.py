@@ -97,3 +97,35 @@ def test_init_refuses_default_admin_password_when_disallowed(app):
     app.config["ADMIN_PASSWORD"] = "Str0ng-Password!"
     init_database(app)
     assert User.query.filter_by(email=app.config["ADMIN_EMAIL"]).first() is not None
+
+
+def test_existing_default_admin_is_refused_on_public_deploy(app):
+    import pytest
+    from seed import init_database
+    from models import User
+
+    app.config["ALLOW_DEFAULT_ADMIN"] = False
+    admin = User.query.filter_by(email=app.config["ADMIN_EMAIL"]).first()
+    assert admin.check_password("Admin@12345")
+
+    with pytest.raises(RuntimeError):
+        init_database(app)
+
+    app.config["ADMIN_PASSWORD"] = "Str0ng-Password!"
+    from services import create_user
+
+    other = create_user("newadmin", "new@example.com", "Str0ng-Password!", is_admin=True)
+    db.session.add(other)
+    db.session.commit()
+    assert other.is_admin
+
+
+def test_create_admin_command_refuses_default_password(app):
+    from models import User
+
+    app.config["ALLOW_DEFAULT_ADMIN"] = False
+    runner = app.test_cli_runner()
+    result = runner.invoke(args=["create-admin"])
+    assert result.exit_code != 0
+    assert "كلمة المرور الافتراضية" in str(result.exception) or "كلمة المرور الافتراضية" in result.output
+    assert User.query.filter_by(email=app.config["ADMIN_EMAIL"]).first().check_password("Admin@12345")

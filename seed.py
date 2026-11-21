@@ -128,6 +128,26 @@ CATALOGUE = [
 ]
 
 
+def check_admin_password(app, existing=None):
+    """Refuse the built-in admin password on deployments that disallow it.
+
+    Runs for a fresh install, for an existing admin row (which may still carry
+    the default hash), and for the create-admin command that resets it.
+    """
+    if app.config.get("ALLOW_DEFAULT_ADMIN", True):
+        return
+    if app.config["ADMIN_PASSWORD"] == DEFAULT_ADMIN_PASSWORD:
+        raise RuntimeError(
+            "ADMIN_PASSWORD غير مضبوط: التهيئة على خادم عام ترفض كلمة المرور الافتراضية. "
+            "اضبط ADMIN_EMAIL وADMIN_PASSWORD في متغيرات البيئة."
+        )
+    if existing is not None and existing.check_password(DEFAULT_ADMIN_PASSWORD):
+        raise RuntimeError(
+            "حساب المسؤول الحالي ما زال يستخدم كلمة المرور الافتراضية. "
+            "غيّرها بكلمة قوية ثم أعد التشغيل."
+        )
+
+
 def init_database(app):
     """Create the tables, the catalogue, and the admin account only.
 
@@ -138,15 +158,8 @@ def init_database(app):
 
     email = app.config["ADMIN_EMAIL"].strip().lower()
     admin = User.query.filter_by(email=email).first()
+    check_admin_password(app, admin)
     if admin is None:
-        if (
-            app.config["ADMIN_PASSWORD"] == DEFAULT_ADMIN_PASSWORD
-            and not app.config.get("ALLOW_DEFAULT_ADMIN", True)
-        ):
-            raise RuntimeError(
-                "ADMIN_PASSWORD غير مضبوط: التهيئة على خادم عام ترفض كلمة المرور الافتراضية. "
-                "اضبط ADMIN_EMAIL وADMIN_PASSWORD في متغيرات البيئة."
-            )
         admin = create_user(
             app.config["ADMIN_USERNAME"],
             email,

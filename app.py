@@ -105,8 +105,11 @@ def create_app(config_class=Config):
     @app.cli.command("create-admin")
     def create_admin_command():
         """Create or refresh the admin account from configuration."""
+        from seed import check_admin_password
+
         email = app.config["ADMIN_EMAIL"].strip().lower()
         user = User.query.filter_by(email=email).first()
+        check_admin_password(app, user)
         if user is None:
             user = create_user(
                 app.config["ADMIN_USERNAME"],
