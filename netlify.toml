@@ -1,0 +1,6 @@
+# Netlify serves static files only, and this repository is a Flask application
+# (Python + a database), so it cannot be built or hosted here. Builds are
+# skipped on purpose instead of failing: deploy the store to a Python host and
+# see README → النشر (Render blueprint / Dockerfile).
+[build]
+  ignore = "echo 'Flask app: Netlify hosts static sites only, build skipped. See README.' && exit 1"
