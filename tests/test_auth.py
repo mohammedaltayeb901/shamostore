@@ -120,6 +120,39 @@ def test_existing_default_admin_is_refused_on_public_deploy(app):
     assert other.is_admin
 
 
+def test_strong_password_repairs_a_default_hash_admin(app):
+    from seed import init_database
+    from models import User
+
+    admin = User.query.filter_by(email=app.config["ADMIN_EMAIL"]).first()
+    assert admin.check_password("Admin@12345")
+
+    app.config["ALLOW_DEFAULT_ADMIN"] = False
+    app.config["ADMIN_PASSWORD"] = "Str0ng-Password!"
+    init_database(app)
+
+    db.session.refresh(admin)
+    assert admin.check_password("Str0ng-Password!")
+    assert not admin.check_password("Admin@12345")
+    assert admin.is_admin
+
+
+def test_custom_admin_password_is_not_overwritten_by_init(app):
+    from seed import init_database
+    from models import User
+
+    admin = User.query.filter_by(email=app.config["ADMIN_EMAIL"]).first()
+    admin.set_password("My-Own-Password-9")
+    db.session.commit()
+
+    app.config["ALLOW_DEFAULT_ADMIN"] = False
+    app.config["ADMIN_PASSWORD"] = "Str0ng-Password!"
+    init_database(app)
+
+    db.session.refresh(admin)
+    assert admin.check_password("My-Own-Password-9")
+
+
 def test_create_admin_command_refuses_default_password(app):
     from models import User
 

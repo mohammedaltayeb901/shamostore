@@ -105,7 +105,7 @@ def create_app(config_class=Config):
     @app.cli.command("create-admin")
     def create_admin_command():
         """Create or refresh the admin account from configuration."""
-        from seed import check_admin_password
+        from seed import check_admin_password, repair_default_admin
 
         email = app.config["ADMIN_EMAIL"].strip().lower()
         user = User.query.filter_by(email=email).first()
@@ -119,7 +119,8 @@ def create_app(config_class=Config):
             )
         else:
             user.is_admin = True
-            user.set_password(app.config["ADMIN_PASSWORD"])
+            if not repair_default_admin(app, user):
+                user.set_password(app.config["ADMIN_PASSWORD"])
         db.session.commit()
         print(f"حساب المسؤول جاهز: {email}")
 

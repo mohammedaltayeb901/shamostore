@@ -141,11 +141,22 @@ def check_admin_password(app, existing=None):
             "ADMIN_PASSWORD غير مضبوط: التهيئة على خادم عام ترفض كلمة المرور الافتراضية. "
             "اضبط ADMIN_EMAIL وADMIN_PASSWORD في متغيرات البيئة."
         )
-    if existing is not None and existing.check_password(DEFAULT_ADMIN_PASSWORD):
-        raise RuntimeError(
-            "حساب المسؤول الحالي ما زال يستخدم كلمة المرور الافتراضية. "
-            "غيّرها بكلمة قوية ثم أعد التشغيل."
-        )
+
+
+
+def repair_default_admin(app, admin):
+    """Replace a built-in password hash with the configured one.
+
+    A deployment that booted before the guard existed can still hold the
+    default hash; setting a strong ADMIN_PASSWORD repairs it in place instead
+    of leaving the operator with no way in.
+    """
+    if admin is None or app.config.get("ALLOW_DEFAULT_ADMIN", True):
+        return False
+    if not admin.check_password(DEFAULT_ADMIN_PASSWORD):
+        return False
+    admin.set_password(app.config["ADMIN_PASSWORD"])
+    return True
 
 
 def init_database(app):
@@ -169,6 +180,7 @@ def init_database(app):
         db.session.add(admin)
     else:
         admin.is_admin = True
+        repair_default_admin(app, admin)
 
     if Game.query.count() == 0:
         for index, entry in enumerate(CATALOGUE):
