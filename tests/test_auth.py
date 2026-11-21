@@ -76,3 +76,24 @@ def test_admin_can_open_dashboard(admin_client):
     response = admin_client.get("/admin/")
     assert response.status_code == 200
     assert "نظرة عامة" in response.get_data(as_text=True)
+
+
+def test_init_refuses_default_admin_password_when_disallowed(app):
+    import pytest
+    from seed import init_database
+
+    app.config["ALLOW_DEFAULT_ADMIN"] = False
+    app.config["ADMIN_PASSWORD"] = "Admin@12345"
+    from extensions import db
+    from models import User
+
+    db.session.query(User).delete()
+    db.session.commit()
+
+    with pytest.raises(RuntimeError):
+        init_database(app)
+    assert User.query.filter_by(email=app.config["ADMIN_EMAIL"]).first() is None
+
+    app.config["ADMIN_PASSWORD"] = "Str0ng-Password!"
+    init_database(app)
+    assert User.query.filter_by(email=app.config["ADMIN_EMAIL"]).first() is not None

@@ -17,6 +17,8 @@ services:
         value: $
       - key: ENABLE_DEMO_ACCOUNT
         value: "false"
+      - key: ALLOW_DEFAULT_ADMIN
+        value: "false"
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD

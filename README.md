@@ -48,6 +48,10 @@ cp .env.example .env            # ثم عدّل SECRET_KEY وبيانات الم
 | مسؤول | `admin@shamostore.com` | `Admin@12345` |
 | عميل تجريبي (بعد `seed-demo` فقط) | `player@shamostore.com` | `Player@12345` |
 
+على خادم عام اضبط `ADMIN_PASSWORD` دائماً: الإعداد الافتراضي في `Dockerfile` و`render.yaml`
+يرفض كلمة المرور الافتراضية (`ALLOW_DEFAULT_ADMIN=false`) ويفشل الإقلاع برسالة واضحة بدلاً من
+إنشاء مسؤول بكلمة مرور معروفة.
+
 `init-db` لا ينشئ أي حساب عميل ممول، حتى لا يحصل تثبيت إنتاجي على دخول تجريبي معروف.
 الحساب التجريبي وطلباته تأتي من أمر `seed-demo` المنفصل، ويمكن تعطيله بـ
 `ENABLE_DEMO_ACCOUNT=false`.

@@ -6,6 +6,9 @@ BASEDIR = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(BASEDIR, ".env"))
 
 
+DEFAULT_ADMIN_PASSWORD = "Admin@12345"
+
+
 def _database_uri():
     """Prefer DATABASE_URL, normalising the legacy postgres:// scheme."""
     uri = os.environ.get("DATABASE_URL")
@@ -33,7 +36,11 @@ class Config:
 
     ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME") or "admin"
     ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL") or "admin@shamostore.com"
-    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD") or "Admin@12345"
+    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD") or DEFAULT_ADMIN_PASSWORD
+
+    # على خادم عام يجب ضبط ADMIN_PASSWORD؛ الأوامر ترفض كلمة المرور الافتراضية
+    # عندما تكون هذه القيمة false (وهي كذلك في Docker وRender).
+    ALLOW_DEFAULT_ADMIN = os.environ.get("ALLOW_DEFAULT_ADMIN", "true").lower() != "false"
 
     # الحساب التجريبي يُنشأ فقط بأمر "flask seed-demo" ويمكن تعطيله من البيئة.
     ENABLE_DEMO_ACCOUNT = os.environ.get("ENABLE_DEMO_ACCOUNT", "true").lower() != "false"

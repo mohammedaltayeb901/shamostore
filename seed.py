@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
 
+from config import DEFAULT_ADMIN_PASSWORD
 from extensions import db
 from models import Game, Order, TopUpPackage, TopUpRequest, User
 from services import create_user
@@ -138,6 +139,14 @@ def init_database(app):
     email = app.config["ADMIN_EMAIL"].strip().lower()
     admin = User.query.filter_by(email=email).first()
     if admin is None:
+        if (
+            app.config["ADMIN_PASSWORD"] == DEFAULT_ADMIN_PASSWORD
+            and not app.config.get("ALLOW_DEFAULT_ADMIN", True)
+        ):
+            raise RuntimeError(
+                "ADMIN_PASSWORD غير مضبوط: التهيئة على خادم عام ترفض كلمة المرور الافتراضية. "
+                "اضبط ADMIN_EMAIL وADMIN_PASSWORD في متغيرات البيئة."
+            )
         admin = create_user(
             app.config["ADMIN_USERNAME"],
             email,
