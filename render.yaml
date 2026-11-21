@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: shamostore
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: flask --app app init-db && gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 wsgi:application
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: SECRET_KEY
+        generateValue: true
+      - key: STORE_NAME
+        value: شامو ستور
+      - key: CURRENCY_SYMBOL
+        value: $
+      - key: ENABLE_DEMO_ACCOUNT
+        value: "false"
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: shamostore-db
+          property: connectionString
+
+databases:
+  - name: shamostore-db
+    plan: basic-256mb

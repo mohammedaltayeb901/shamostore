@@ -55,6 +55,38 @@ cp .env.example .env            # ثم عدّل SECRET_KEY وبيانات الم
 غيّر كلمة مرور المسؤول قبل أي استخدام حقيقي (`flask --app app create-admin` يحدّثها من
 `ADMIN_PASSWORD`).
 
+## النشر
+
+المشروع تطبيق Flask، لذلك يحتاج خادماً يشغّل Python. Netlify أو GitHub Pages (استضافة ثابتة)
+لا تستطيع تشغيله، وتحويلها إليه مباشرة يعطي صفحة «Page not found».
+
+**Docker**
+
+```bash
+docker build -t shamostore .
+docker run -p 8000:8000 \
+  -e SECRET_KEY="مفتاح-طويل-عشوائي" \
+  -e ADMIN_EMAIL="you@example.com" \
+  -e ADMIN_PASSWORD="كلمة-مرور-قوية" \
+  shamostore
+```
+
+**Render** (موصى به لنطاق دائم)
+
+1. ارفع المستودع إلى GitHub ثم أنشئ Blueprint من ملف `render.yaml`.
+2. أدخل `ADMIN_EMAIL` و`ADMIN_PASSWORD` عند الطلب؛ يُولّد `SECRET_KEY` تلقائياً.
+3. المنصة تنشئ PostgreSQL وتمرر `DATABASE_URL`، والتطبيق يحوّل `postgres://` تلقائياً.
+
+**خادم خاص (VPS)**
+
+```bash
+python3 -m venv /opt/shamostore/.venv
+/opt/shamostore/.venv/bin/pip install -r requirements.txt
+/opt/shamostore/.venv/bin/gunicorn -c gunicorn.conf.py wsgi:application
+```
+
+ثم ضع Nginx أمام المنفذ 8000 مع شهادة HTTPS (Certbot)، واضبط `SESSION_COOKIE_SECURE = True`.
+
 ## الاختبارات
 
 ```bash

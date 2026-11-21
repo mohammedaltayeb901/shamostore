@@ -6,12 +6,22 @@ BASEDIR = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(BASEDIR, ".env"))
 
 
+def _database_uri():
+    """Prefer DATABASE_URL, normalising the legacy postgres:// scheme."""
+    uri = os.environ.get("DATABASE_URL")
+    if not uri:
+        return "sqlite:///" + os.path.join(BASEDIR, "instance", "shamostore.db")
+    if uri.startswith("postgres://"):
+        uri = "postgresql+psycopg://" + uri[len("postgres://"):]
+    elif uri.startswith("postgresql://"):
+        uri = "postgresql+psycopg://" + uri[len("postgresql://"):]
+    return uri
+
+
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-secret-key-change-in-production"
 
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or (
-        "sqlite:///" + os.path.join(BASEDIR, "instance", "shamostore.db")
-    )
+    SQLALCHEMY_DATABASE_URI = _database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
