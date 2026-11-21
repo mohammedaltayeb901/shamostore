@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}{{ code }} — {{ store_name }}{% endblock %}
+
+{% block content %}
+<div class="empty" style="padding: 70px 20px">
+  <div style="font-size: 54px; font-weight: 800; letter-spacing: -3px; color: var(--faint)">{{ code }}</div>
+  <p class="mt-8">{{ message }}</p>
+  <a class="btn btn--primary mt-16" href="{{ url_for('shop.home') }}">العودة للرئيسية</a>
+</div>
+{% endblock %}

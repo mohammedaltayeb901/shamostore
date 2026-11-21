@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cover %}
+
+{% block title %}تأكيد الطلب — {{ store_name }}{% endblock %}
+
+{% block content %}
+<p class="text-sm muted">
+  <a class="link-more" href="{{ url_for('shop.game_detail', slug=game.slug) }}">← العودة إلى {{ game.name }}</a>
+</p>
+
+<h1 style="font-size: 27px; margin-top: 10px;">تأكيد الطلب</h1>
+<p>راجع التفاصيل قبل خصم المبلغ من محفظتك.</p>
+
+<div class="split--narrow split mt-24">
+  <div class="card">
+    <div class="card__head">
+      <h2>تفاصيل الشحن</h2>
+      <span class="chip chip--success">جاهز للتنفيذ</span>
+    </div>
+
+    <div class="row" style="gap: 14px; margin-bottom: 18px">
+      <div style="width: 96px">{{ cover(game) }}</div>
+      <div>
+        <strong style="font-size: 16px">{{ game.name }}</strong>
+        <div class="text-sm muted">{{ package.label }} — {{ package.amount or '' }} {{ game.currency_name }}</div>
+      </div>
+    </div>
+
+    <div class="kv">
+      <div class="kv__row"><span>معرّف الحساب</span><b>{{ place_form.player_id.data }}</b></div>
+      <div class="kv__row"><span>الباقة</span><b>{{ package.label }}</b></div>
+      {% if package.bonus %}<div class="kv__row"><span>المكافأة</span><b>{{ package.bonus }}</b></div>{% endif %}
+      {% if place_form.note.data %}
+        <div class="kv__row"><span>ملاحظاتك</span><b>{{ place_form.note.data }}</b></div>
+      {% endif %}
+    </div>
+
+    <div class="mt-24">
+      <div class="summary-row">
+        <span class="muted">سعر الباقة</span>
+        <span class="num">{{ total|money }}</span>
+      </div>
+      <div class="summary-row summary-row--total">
+        <span>الإجمالي المستحق</span>
+        <span>{{ total|money }}</span>
+      </div>
+    </div>
+
+    {% if after_balance < 0 %}
+      <div class="flash flash--warning mt-16" style="margin-bottom: 0">
+        رصيد محفظتك لا يكفي لهذا الطلب. اشحن محفظتك أولاً ثم أكمل الشراء.
+      </div>
+    {% endif %}
+
+    <div class="row mt-24">
+      {% if after_balance < 0 %}
+        <a class="btn btn--primary" href="{{ url_for('wallet.topup') }}">شحن المحفظة</a>
+        <a class="btn btn--ghost" href="{{ url_for('shop.game_detail', slug=game.slug) }}">اختيار باقة أخرى</a>
+      {% else %}
+        <form method="post" action="{{ url_for('orders.place') }}">
+          {{ place_form.hidden_tag() }}
+          <button class="btn btn--primary" type="submit">تأكيد الشراء من المحفظة</button>
+        </form>
+        <a class="btn btn--ghost" href="{{ url_for('shop.game_detail', slug=game.slug) }}">إلغاء</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <aside class="stack">
+    <div class="card card--flat">
+      <div class="panel-title">محفظتك</div>
+      <div class="kv">
+        <div class="kv__row"><span>الرصيد الحالي</span><b class="num">{{ balance|money }}</b></div>
+        <div class="kv__row"><span>بعد هذا الطلب</span><b class="num">{{ after_balance|money }}</b></div>
+      </div>
+    </div>
+
+    <div class="card card--flat">
+      <div class="panel-title">ماذا يحدث بعد التأكيد؟</div>
+      <p class="text-sm mb-0">
+        يُخصم المبلغ فوراً ويظهر الطلب في صفحة «طلباتي» بحالة «بانتظار المراجعة».
+        يبدأ التنفيذ خلال دقائق، وإذا تعذر الشحن يُعاد المبلغ إلى محفظتك كاملاً.
+      </p>
+    </div>
+  </aside>
+</div>
+{% endblock %}

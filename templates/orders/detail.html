@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}الطلب {{ order.code }} — {{ store_name }}{% endblock %}
+
+{% block content %}
+<p class="text-sm muted"><a class="link-more" href="{{ url_for('orders.list_orders') }}">← كل الطلبات</a></p>
+
+<div class="split--narrow split mt-16">
+  <div class="card">
+    <div class="card__head">
+      <div>
+        <h1 style="font-size: 24px; margin: 0;">الطلب {{ order.code }}</h1>
+        <span class="text-sm muted">{{ order.created_at|datetime }}</span>
+      </div>
+      <span class="chip chip--{{ {'completed': 'success', 'processing': 'info', 'pending': 'warning', 'rejected': 'danger'}.get(order.status, '') }}">
+        {{ order.status_label }}
+      </span>
+    </div>
+
+    {% set stage = {'pending': 1, 'processing': 2, 'completed': 3}.get(order.status, 1) %}
+    <div class="status-track">
+      <span class="status-track__seg {{ 'is-done' if stage >= 1 else '' }} {{ 'is-bad' if order.status == 'rejected' else '' }}"></span>
+      <span class="status-track__seg {{ 'is-done' if stage >= 2 else '' }} {{ 'is-bad' if order.status == 'rejected' else '' }}"></span>
+      <span class="status-track__seg {{ 'is-done' if stage >= 3 else '' }} {{ 'is-bad' if order.status == 'rejected' else '' }}"></span>
+    </div>
+    <div class="row row--between text-sm muted" style="margin-bottom: 20px">
+      <span>استلام الطلب</span>
+      <span>قيد التنفيذ</span>
+      <span>مكتمل</span>
+    </div>
+
+    <div class="kv">
+      <div class="kv__row"><span>اللعبة</span><b>{{ order.game_name }}</b></div>
+      <div class="kv__row"><span>الباقة</span><b>{{ order.package_label }}</b></div>
+      <div class="kv__row"><span>معرّف الحساب</span><b>{{ order.player_id }}</b></div>
+      <div class="kv__row"><span>المبلغ المدفوع</span><b class="num">{{ order.price|money }}</b></div>
+      <div class="kv__row"><span>آخر تحديث</span><b>{{ order.updated_at|datetime }}</b></div>
+      {% if order.delivered_at %}
+        <div class="kv__row"><span>وقت التسليم</span><b>{{ order.delivered_at|datetime }}</b></div>
+      {% endif %}
+      {% if order.note %}
+        <div class="kv__row"><span>ملاحظاتك</span><b>{{ order.note }}</b></div>
+      {% endif %}
+    </div>
+
+    {% if order.admin_note %}
+      <div class="note-box mt-16">
+        <strong>ملاحظة من الفريق:</strong> {{ order.admin_note }}
+      </div>
+    {% endif %}
+
+    <div class="row mt-24">
+      {% if order.game %}
+        <a class="btn btn--ghost" href="{{ url_for('shop.game_detail', slug=order.game.slug) }}">طلب آخر</a>
+      {% endif %}
+      <a class="btn btn--ghost" href="{{ url_for('orders.list_orders') }}">رجوع للطلبات</a>
+    </div>
+  </div>
+
+  <aside class="stack">
+    <div class="card card--flat">
+      <div class="panel-title">حالة الطلب</div>
+      {% if order.status == 'pending' %}
+        <p class="text-sm mb-0">استلمنا طلبك وهو بانتظار البدء في التنفيذ. لا حاجة لأي إجراء منك.</p>
+      {% elif order.status == 'processing' %}
+        <p class="text-sm mb-0">جارٍ شحن حسابك الآن. عادة ما يكتمل ذلك خلال دقائق.</p>
+      {% elif order.status == 'completed' %}
+        <p class="text-sm mb-0">تم شحن حسابك بنجاح. افتح اللعبة وتحقق من رصيدك.</p>
+      {% else %}
+        <p class="text-sm mb-0">تعذر تنفيذ الطلب وأُعيد المبلغ إلى محفظتك. يمكنك المحاولة مرة أخرى.</p>
+      {% endif %}
+    </div>
+
+    <div class="card card--flat">
+      <div class="panel-title">تحتاج مساعدة؟</div>
+      <p class="text-sm mb-0">تواصل مع الدعم واذكر رقم الطلب <b>{{ order.code }}</b> لنساعدك بسرعة.</p>
+    </div>
+  </aside>
+</div>
+{% endblock %}

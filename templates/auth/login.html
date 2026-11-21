@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+
+{% block title %}تسجيل الدخول — {{ store_name }}{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>تسجيل الدخول</h1>
+    <p>ادخل إلى محفظتك وأكمل طلبات الشحن.</p>
+
+    <form method="post">
+      {{ form.hidden_tag() }}
+      {{ field(form.email) }}
+      {{ field(form.password) }}
+      <label class="check" style="margin-bottom: 18px">{{ form.remember_me() }} {{ form.remember_me.label.text }}</label>
+      {{ form.submit(class_="btn btn--primary btn--block") }}
+    </form>
+
+    <div class="auth-foot">
+      ليس لديك حساب؟ <a href="{{ url_for('auth.register') }}">أنشئ حسابك الآن</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

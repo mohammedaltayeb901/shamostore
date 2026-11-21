@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-shell">
+  <nav class="admin-nav">
+    <span class="admin-nav__title">إدارة المتجر</span>
+    <a class="{% if request.endpoint == 'admin.dashboard' %}is-active{% endif %}" href="{{ url_for('admin.dashboard') }}">نظرة عامة</a>
+    <a class="{% if request.endpoint in ('admin.games', 'admin.add_package') %}is-active{% endif %}" href="{{ url_for('admin.games') }}">الألعاب والباقات</a>
+    <a class="{% if request.endpoint == 'admin.orders' %}is-active{% endif %}" href="{{ url_for('admin.orders') }}">الطلبات</a>
+    <a class="{% if request.endpoint == 'admin.topups' %}is-active{% endif %}" href="{{ url_for('admin.topups') }}">طلبات شحن الرصيد</a>
+    <a class="{% if request.endpoint == 'admin.users' %}is-active{% endif %}" href="{{ url_for('admin.users') }}">المستخدمون</a>
+  </nav>
+
+  <section>
+    <div class="admin-head">
+      <div>
+        <h1>{% block admin_title %}{% endblock %}</h1>
+        <p class="text-sm muted mb-0">{% block admin_sub %}{% endblock %}</p>
+      </div>
+      {% block admin_actions %}{% endblock %}
+    </div>
+
+    {% block admin_content %}{% endblock %}
+  </section>
+</div>
+{% endblock %}

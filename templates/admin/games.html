@@ -1,0 +1,84 @@
+{% extends "admin/base.html" %}
+{% from "_macros.html" import field %}
+
+{% block title %}الألعاب والباقات — {{ store_name }}{% endblock %}
+{% block admin_title %}الألعاب والباقات{% endblock %}
+{% block admin_sub %}أضف ألعاباً جديدة، وعدّل الباقات والأسعار.{% endblock %}
+
+{% block admin_content %}
+<details class="card">
+  <summary style="cursor: pointer; font-weight: 700">+ إضافة لعبة جديدة</summary>
+  <form method="post" class="mt-24" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px">
+    {{ form.hidden_tag() }}
+    {{ field(form.name) }}
+    {{ field(form.slug, hint="مثال: pubg-mobile") }}
+    {{ field(form.tagline) }}
+    {{ field(form.currency_name, hint="مثال: UC أو جواهر") }}
+    {{ field(form.category) }}
+    {{ field(form.accent, hint="لون الغلاف بصيغة #RRGGBB") }}
+    {{ field(form.sort_order) }}
+    <div class="field">
+      <label class="check">{{ form.is_active() }} {{ form.is_active.label.text }}</label>
+    </div>
+    <div class="field" style="grid-column: 1 / -1">{{ field(form.description) }}</div>
+    <div style="grid-column: 1 / -1">{{ form.submit(class_="btn btn--primary") }}</div>
+  </form>
+</details>
+
+<div class="admin-block admin-games">
+  {% for game in games %}
+    <details class="admin-game">
+      <summary>
+        <span class="admin-game__dot" style="background: {{ game.accent }}">{{ game.initials }}</span>
+        <strong>{{ game.name }}</strong>
+        <span class="muted text-sm">{{ game.currency_name }} · {{ game.packages|length }} باقة</span>
+        <span class="chip chip--{{ 'success' if game.is_active else 'danger' }}">{{ 'مفعّلة' if game.is_active else 'موقوفة' }}</span>
+        <form method="post" action="{{ url_for('admin.toggle_game', game_id=game.id) }}" style="margin-inline-start: auto">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn--sm" type="submit">{{ 'إيقاف' if game.is_active else 'تفعيل' }}</button>
+        </form>
+      </summary>
+
+      <div class="admin-game__body">
+        {% if game.packages %}
+          {% for package in game.packages %}
+            <div class="package-row">
+              <form method="post" action="{{ url_for('admin.update_package', package_id=package.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input class="input" name="label" value="{{ package.label }}" style="width: 150px">
+                <input class="input" name="price" value="{{ '%.2f'|format(package.price) }}" style="width: 90px" inputmode="decimal">
+                <button class="btn btn--sm" type="submit">حفظ</button>
+              </form>
+              {% if package.bonus %}<span class="chip chip--info">{{ package.bonus }}</span>{% endif %}
+              <span class="chip chip--{{ 'success' if package.is_active else 'danger' }}">{{ 'ظاهرة' if package.is_active else 'مخفية' }}</span>
+              <form method="post" action="{{ url_for('admin.toggle_package', package_id=package.id) }}" style="margin-inline-start: auto">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn--sm btn--ghost" type="submit">{{ 'إخفاء' if package.is_active else 'إظهار' }}</button>
+              </form>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-sm muted">لا توجد باقات لهذه اللعبة.</p>
+        {% endif %}
+
+        <details class="mt-16">
+          <summary style="cursor: pointer; color: var(--accent-2); font-size: 13.5px; font-weight: 700">+ إضافة باقة</summary>
+          <form method="post" action="{{ url_for('admin.add_package', game_id=game.id) }}" class="inline-form mt-16">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input class="input" name="label" placeholder="اسم الباقة (325 UC)" required style="width: 170px">
+            <input class="input" name="amount" placeholder="الكمية" style="width: 90px">
+            <input class="input" name="price" placeholder="السعر" required inputmode="decimal" style="width: 90px">
+            <input class="input" name="bonus" placeholder="مكافأة (اختياري)" style="width: 130px">
+            <label class="check"><input type="checkbox" name="is_active" checked> مفعّلة</label>
+            <button class="btn btn--sm btn--primary" type="submit">إضافة</button>
+          </form>
+        </details>
+      </div>
+    </details>
+  {% endfor %}
+
+  {% if not games %}
+    <div class="empty">لا توجد ألعاب. أضف أول لعبة من الأعلى.</div>
+  {% endif %}
+</div>
+{% endblock %}

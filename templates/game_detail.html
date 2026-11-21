@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cover %}
+
+{% block title %}{{ game.name }} — شحن {{ game.currency_name }} | {{ store_name }}{% endblock %}
+
+{% block content %}
+<div class="game-hero">
+  <div style="width: 132px">
+    {{ cover(game) }}
+  </div>
+  <div>
+    <h1>{{ game.name }}</h1>
+    <div class="game-hero__meta">
+      <span class="chip chip--accent">{{ game.currency_name }}</span>
+      <span class="chip">{{ game.active_packages|length }} باقة متاحة</span>
+      <span class="chip chip--success">تسليم فوري</span>
+    </div>
+  </div>
+</div>
+
+{% if game.description %}
+  <p class="mt-16" style="max-width: 720px">{{ game.description }}</p>
+{% endif %}
+
+<div class="split mt-24">
+  <form method="post" action="{{ url_for('orders.checkout') }}" class="card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="card__head">
+      <h2>اختر الباقة</h2>
+      <span class="text-sm muted">الأصل: {{ game.currency_name }}</span>
+    </div>
+
+    <div class="package-grid">
+      {% for package in packages %}
+        <label class="package-option">
+          <input type="radio" name="package_id" value="{{ package.id }}"
+                 data-price="{{ package.price }}" data-label="{{ package.label }}"
+                 {% if loop.first %}checked{% endif %} required>
+          <span class="package-option__box">
+            {% if package.bonus %}<span class="package-option__bonus">{{ package.bonus }}</span>{% endif %}
+            <span class="package-option__label">{{ package.label }}</span>
+            <span class="package-option__amount">{{ package.amount or '' }} {{ game.currency_name }}</span>
+            <span class="package-option__price">{{ package.price|money }}</span>
+          </span>
+        </label>
+      {% endfor %}
+    </div>
+
+    <div class="field mt-24">
+      <label for="player_id">معرّف الحساب في اللعبة</label>
+      <input class="input" id="player_id" name="player_id" required minlength="4" maxlength="64"
+             value="{{ current_user.orders[0].player_id if current_user.is_authenticated and current_user.orders else '' }}"
+             placeholder="مثال: 5123456789">
+      <span class="hint">يمكنك إيجاده داخل اللعبة من الملف الشخصي أو الإعدادات.</span>
+    </div>
+
+    <div class="field">
+      <label for="note">ملاحظات (اختياري)</label>
+      <textarea class="textarea" id="note" name="note" maxlength="300" placeholder="أي تفاصيل إضافية تريد إخبارنا بها"></textarea>
+    </div>
+
+    {% if current_user.is_authenticated %}
+      <button class="btn btn--primary btn--block" type="submit">متابعة الدفع</button>
+    {% else %}
+      <a class="btn btn--primary btn--block" href="{{ url_for('auth.login', next=request.path) }}">سجّل الدخول للمتابعة</a>
+    {% endif %}
+  </form>
+
+  <aside class="sticky-panel stack">
+    <div class="balance-card">
+      <span class="balance-card__label">رصيد محفظتك</span>
+      {% if current_user.is_authenticated %}
+        <div class="balance-card__amount">{{ current_user.available_balance|money }}</div>
+        <a class="btn btn--sm" href="{{ url_for('wallet.topup') }}">شحن الرصيد</a>
+      {% else %}
+        <div class="balance-card__amount">—</div>
+        <a class="btn btn--primary btn--sm" href="{{ url_for('auth.login', next=request.path) }}">سجّل الدخول للشراء</a>
+      {% endif %}
+    </div>
+
+    <div class="card card--flat">
+      <div class="panel-title">ملخص الطلب</div>
+      <div class="kv">
+        <div class="kv__row"><span>اللعبة</span><b>{{ game.name }}</b></div>
+        <div class="kv__row"><span>الباقة</span><b data-summary-label>{{ packages[0].label }}</b></div>
+        <div class="kv__row"><span>السعر</span><b data-summary-price>{{ packages[0].price|money }}</b></div>
+      </div>
+      <p class="text-sm muted mt-16 mb-0">يُخصم المبلغ من محفظتك بعد تأكيد الطلب، ويُعاد تلقائياً إذا تعذر التنفيذ.</p>
+    </div>
+
+    <div class="note-box">
+      الطلبات تُنفذ عادة خلال 1–5 دقائق. إذا تأخر طلبك، تواصل مع الدعم مع رقم الطلب.
+    </div>
+  </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (() => {
+    const symbol = "{{ currency_symbol }}";
+    const radios = document.querySelectorAll('input[name="package_id"]');
+    const labelOut = document.querySelector('[data-summary-label]');
+    const priceOut = document.querySelector('[data-summary-price]');
+    radios.forEach((radio) => {
+      radio.addEventListener('change', () => {
+        labelOut.textContent = radio.dataset.label;
+        priceOut.textContent = symbol + Number(radio.dataset.price).toFixed(2);
+      });
+    });
+  })();
+</script>
+{% endblock %}

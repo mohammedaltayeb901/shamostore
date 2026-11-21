@@ -1,19 +1,58 @@
 import os
+
 from dotenv import load_dotenv
 
-basedir = os.path.abspath(os.path.dirname(__file__))
-load_dotenv(os.path.join(basedir, ".env"))
+BASEDIR = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(BASEDIR, ".env"))
+
+
+DEFAULT_ADMIN_PASSWORD = "Admin@12345"
+
+
+def _database_uri():
+    """Prefer DATABASE_URL, normalising the legacy postgres:// scheme."""
+    uri = os.environ.get("DATABASE_URL")
+    if not uri:
+        return "sqlite:///" + os.path.join(BASEDIR, "instance", "shamostore.db")
+    if uri.startswith("postgres://"):
+        uri = "postgresql+psycopg://" + uri[len("postgres://"):]
+    elif uri.startswith("postgresql://"):
+        uri = "postgresql+psycopg://" + uri[len("postgresql://"):]
+    return uri
+
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY") or "you-will-never-guess"
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or \
-        "sqlite:///" + os.path.join(basedir, "instance", "game_shop.db")
+    SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-secret-key-change-in-production"
+
+    SQLALCHEMY_DATABASE_URI = _database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
-    # Mail server configuration (example using environment variables)
-    MAIL_SERVER = os.environ.get("MAIL_SERVER")
-    MAIL_PORT = int(os.environ.get("MAIL_PORT") or 25)
-    MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS") is not None
-    MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
-    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
-    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER") or "noreply@gameshipping.com"
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
+
+    STORE_NAME = os.environ.get("STORE_NAME") or "شامو ستور"
+    CURRENCY_SYMBOL = os.environ.get("CURRENCY_SYMBOL") or "$"
+
+    MIN_TOPUP = 1
+    MAX_TOPUP = 5000
+
+    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME") or "admin"
+    ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL") or "admin@shamostore.com"
+    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD") or DEFAULT_ADMIN_PASSWORD
+
+    # على خادم عام يجب ضبط ADMIN_PASSWORD؛ الأوامر ترفض كلمة المرور الافتراضية
+    # عندما تكون هذه القيمة false (وهي كذلك في Docker وRender).
+    ALLOW_DEFAULT_ADMIN = os.environ.get("ALLOW_DEFAULT_ADMIN", "true").lower() != "false"
+
+    # الحساب التجريبي يُنشأ فقط بأمر "flask seed-demo" ويمكن تعطيله من البيئة.
+    ENABLE_DEMO_ACCOUNT = os.environ.get("ENABLE_DEMO_ACCOUNT", "true").lower() != "false"
+
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    REMEMBER_COOKIE_HTTPONLY = True
+    WTF_CSRF_TIME_LIMIT = None
+
+
+class TestConfig(Config):
+    TESTING = True
+    WTF_CSRF_ENABLED = False
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SERVER_NAME = "localhost"

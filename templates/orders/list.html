@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}طلباتي — {{ store_name }}{% endblock %}
+
+{% block content %}
+<div class="section__head">
+  <div>
+    <h1 style="font-size: 27px; margin: 0;">طلباتي</h1>
+    <p>كل عمليات الشحن التي أجريتها من حسابك.</p>
+  </div>
+  <a class="btn btn--primary" href="{{ url_for('shop.games') }}">شحن جديد</a>
+</div>
+
+{% if orders %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>الطلب</th>
+          <th>اللعبة</th>
+          <th>الباقة</th>
+          <th>معرّف الحساب</th>
+          <th>المبلغ</th>
+          <th>الحالة</th>
+          <th>التاريخ</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+          <tr>
+            <td class="num">{{ order.code }}</td>
+            <td>{{ order.game_name }}</td>
+            <td>{{ order.package_label }}</td>
+            <td class="muted">{{ order.player_id }}</td>
+            <td class="num">{{ order.price|money }}</td>
+            <td>
+              <span class="chip chip--{{ {'completed': 'success', 'processing': 'info', 'pending': 'warning', 'rejected': 'danger'}.get(order.status, '') }}">
+                {{ order.status_label }}
+              </span>
+            </td>
+            <td class="muted">{{ order.created_at|datetime }}</td>
+            <td><a class="link-more" href="{{ url_for('orders.detail', order_id=order.id) }}">التفاصيل</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="empty">
+    لا توجد طلبات بعد.<br>
+    <a class="link-more" href="{{ url_for('shop.games') }}">اختر لعبة وابدأ الشحن ←</a>
+  </div>
+{% endif %}
+{% endblock %}

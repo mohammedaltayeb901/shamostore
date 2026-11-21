@@ -1,0 +1,51 @@
+{% extends "admin/base.html" %}
+
+{% block title %}المستخدمون — {{ store_name }}{% endblock %}
+{% block admin_title %}المستخدمون{% endblock %}
+{% block admin_sub %}ابحث عن عميل وعدّل رصيد محفظته عند الحاجة.{% endblock %}
+
+{% block admin_content %}
+<form method="get" class="inline-form" style="margin-bottom: 18px">
+  <input class="input" name="q" value="{{ search }}" placeholder="بحث بالاسم أو البريد" style="width: 260px">
+  <button class="btn btn--sm" type="submit">بحث</button>
+</form>
+
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>المستخدم</th>
+        <th>البريد</th>
+        <th>الرصيد</th>
+        <th>الطلبات</th>
+        <th>تاريخ التسجيل</th>
+        <th>تعديل الرصيد</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+        <tr>
+          <td class="muted">{{ user.id }}</td>
+          <td>
+            {{ user.username }}
+            {% if user.is_admin %}<span class="chip chip--accent">مسؤول</span>{% endif %}
+          </td>
+          <td class="muted">{{ user.email }}</td>
+          <td class="num">{{ user.available_balance|money }}</td>
+          <td>{{ user.orders|length }}</td>
+          <td class="muted">{{ user.created_at|datetime }}</td>
+          <td>
+            <form method="post" action="{{ url_for('admin.user_balance', user_id=user.id) }}" class="inline-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input class="input" name="amount" placeholder="+10 أو -5" style="width: 82px" inputmode="decimal">
+              <input class="input" name="reason" placeholder="السبب" style="width: 110px">
+              <button class="btn btn--sm" type="submit">تطبيق</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

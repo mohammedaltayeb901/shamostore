@@ -1,0 +1,29 @@
+{% macro cover(game, large=false) -%}
+<div class="cover {% if large %}cover--lg{% endif %}" style="--accent: {{ game.accent }}">
+  <span class="cover__initials">{{ game.initials }}</span>
+  <span class="cover__currency">{{ game.currency_name }}</span>
+</div>
+{%- endmacro %}
+
+{% macro errors(field) -%}
+{% if field.errors %}
+<ul class="errors">
+  {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+</ul>
+{% endif %}
+{%- endmacro %}
+
+{% macro field(field, hint='') -%}
+<div class="field">
+  {{ field.label }}
+  {{ field(class_='input' if field.type not in ('SelectField',) else 'select') }}
+  {% if hint %}<span class="hint">{{ hint }}</span>{% endif %}
+  {{ errors(field) }}
+</div>
+{%- endmacro %}
+
+{% macro status_chip(status) -%}
+{% set cls = {'completed': 'success', 'processing': 'info', 'pending': 'warning', 'rejected': 'danger',
+              'approved': 'success'}.get(status, '') %}
+<span class="chip chip--{{ cls }}">{{ order_status_labels.get(status, topup_status_labels.get(status, status)) }}</span>
+{%- endmacro %}
