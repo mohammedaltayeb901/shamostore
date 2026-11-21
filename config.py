@@ -1,19 +1,38 @@
 import os
+
 from dotenv import load_dotenv
 
-basedir = os.path.abspath(os.path.dirname(__file__))
-load_dotenv(os.path.join(basedir, ".env"))
+BASEDIR = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(BASEDIR, ".env"))
+
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY") or "you-will-never-guess"
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or \
-        "sqlite:///" + os.path.join(basedir, "instance", "game_shop.db")
+    SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-secret-key-change-in-production"
+
+    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or (
+        "sqlite:///" + os.path.join(BASEDIR, "instance", "shamostore.db")
+    )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
-    # Mail server configuration (example using environment variables)
-    MAIL_SERVER = os.environ.get("MAIL_SERVER")
-    MAIL_PORT = int(os.environ.get("MAIL_PORT") or 25)
-    MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS") is not None
-    MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
-    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
-    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER") or "noreply@gameshipping.com"
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
+
+    STORE_NAME = os.environ.get("STORE_NAME") or "شامو ستور"
+    CURRENCY_SYMBOL = os.environ.get("CURRENCY_SYMBOL") or "$"
+
+    MIN_TOPUP = 1
+    MAX_TOPUP = 5000
+
+    ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME") or "admin"
+    ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL") or "admin@shamostore.com"
+    ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD") or "Admin@12345"
+
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+    REMEMBER_COOKIE_HTTPONLY = True
+    WTF_CSRF_TIME_LIMIT = None
+
+
+class TestConfig(Config):
+    TESTING = True
+    WTF_CSRF_ENABLED = False
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SERVER_NAME = "localhost"

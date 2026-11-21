@@ -1,0 +1,70 @@
+{% extends "admin/base.html" %}
+
+{% block title %}الطلبات — {{ store_name }}{% endblock %}
+{% block admin_title %}الطلبات{% endblock %}
+{% block admin_sub %}غيّر حالة الطلب، ورفض الطلب يعيد المبلغ تلقائياً إلى محفظة العميل.{% endblock %}
+
+{% block admin_content %}
+<div class="tabs">
+  <a class="tab {% if not active_status %}is-active{% endif %}" href="{{ url_for('admin.orders') }}">الكل</a>
+  {% for key, label in statuses.items() %}
+    <a class="tab {% if active_status == key %}is-active{% endif %}" href="{{ url_for('admin.orders', status=key) }}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+{% if orders %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>الطلب</th>
+          <th>العميل</th>
+          <th>الباقة</th>
+          <th>معرّف الحساب</th>
+          <th>المبلغ</th>
+          <th>الحالة</th>
+          <th>تحديث</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+          <tr>
+            <td>
+              <b class="num">{{ order.code }}</b><br>
+              <span class="text-sm faint">{{ order.created_at|datetime }}</span>
+            </td>
+            <td>
+              {{ order.user.username }}<br>
+              <span class="text-sm faint">{{ order.user.email }}</span>
+            </td>
+            <td>
+              {{ order.game_name }}<br>
+              <span class="text-sm faint">{{ order.package_label }}</span>
+            </td>
+            <td class="muted">{{ order.player_id }}</td>
+            <td class="num">{{ order.price|money }}</td>
+            <td>
+              <span class="chip chip--{{ {'completed': 'success', 'processing': 'info', 'pending': 'warning', 'rejected': 'danger'}.get(order.status, '') }}">{{ order.status_label }}</span>
+              {% if order.admin_note %}<div class="text-sm faint mt-8">{{ order.admin_note }}</div>{% endif %}
+            </td>
+            <td>
+              <form method="post" action="{{ url_for('admin.order_status', order_id=order.id) }}" class="inline-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <select class="select" name="status">
+                  {% for key, label in statuses.items() %}
+                    <option value="{{ key }}" {% if order.status == key %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <input class="input" name="admin_note" placeholder="ملاحظة" value="{{ order.admin_note or '' }}" style="width: 110px">
+                <button class="btn btn--sm btn--primary" type="submit">حفظ</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="empty">لا توجد طلبات في هذه الحالة.</div>
+{% endif %}
+{% endblock %}

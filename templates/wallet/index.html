@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}المحفظة — {{ store_name }}{% endblock %}
+
+{% block content %}
+<div class="section__head">
+  <div>
+    <h1 style="font-size: 27px; margin: 0;">محفظتي</h1>
+    <p>رصيدك وحركاته وطلبات الشحن في مكان واحد.</p>
+  </div>
+  <a class="btn btn--primary" href="{{ url_for('wallet.topup') }}">شحن الرصيد</a>
+</div>
+
+<div class="split">
+  <div class="stack--lg">
+    <div class="balance-card">
+      <span class="balance-card__label">الرصيد المتاح</span>
+      <div class="balance-card__amount">{{ current_user.available_balance|money }}</div>
+      <div class="row">
+        <a class="btn btn--primary btn--sm" href="{{ url_for('wallet.topup') }}">إضافة رصيد</a>
+        <a class="btn btn--ghost btn--sm" href="{{ url_for('shop.games') }}">تصفح الباقات</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card__head">
+        <h2>حركات الرصيد</h2>
+        <span class="text-sm muted">{{ transactions|length }} حركة</span>
+      </div>
+
+      {% if transactions %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>النوع</th>
+                <th>الوصف</th>
+                <th>المبلغ</th>
+                <th>الرصيد بعدها</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for tx in transactions %}
+                <tr>
+                  <td class="muted">{{ tx.created_at|datetime }}</td>
+                  <td>{{ tx.kind_label }}</td>
+                  <td>{{ tx.description }}</td>
+                  <td class="num {{ 'pos' if tx.amount > 0 else 'neg' }}">
+                    {{ '+' if tx.amount > 0 else '−' }}{{ (tx.amount|abs)|money }}
+                  </td>
+                  <td class="num">{{ tx.balance_after|money }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty">لا توجد حركات بعد. ابدأ بشحن رصيدك.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <aside class="stack">
+    <div class="card card--flat">
+      <div class="panel-title">إحصاءاتك</div>
+      <div class="stat-grid">
+        <div class="stat"><span>إجمالي المصروف</span><b>{{ stats.spent|money }}</b></div>
+        <div class="stat"><span>عدد الطلبات</span><b>{{ stats.orders }}</b></div>
+        <div class="stat"><span>قيد التنفيذ/مكتمل</span><b>{{ stats.completed }}</b></div>
+        <div class="stat"><span>طلبات شحن معلّقة</span><b>{{ stats.pending }}</b></div>
+      </div>
+    </div>
+
+    <div class="card card--flat">
+      <div class="card__head">
+        <h2>طلبات شحن الرصيد</h2>
+      </div>
+      {% if topups %}
+        <div class="stack">
+          {% for request_row in topups %}
+            <div class="kv__row" style="align-items: flex-start">
+              <div>
+                <b>{{ request_row.amount|money }}</b><br>
+                <span class="text-sm faint">{{ request_row.method_label }} · {{ request_row.created_at|datetime }}</span>
+              </div>
+              <div style="text-align: end">
+                <span class="chip chip--{{ {'pending': 'warning', 'approved': 'success', 'rejected': 'danger'}.get(request_row.status, '') }}">
+                  {{ request_row.status_label }}
+                </span>
+                {% if request_row.status == 'pending' %}
+                  <form method="post" action="{{ url_for('wallet.cancel_topup', topup_id=request_row.id) }}" class="mt-8" data-confirm="إلغاء طلب الشحن؟">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn--sm btn--danger" type="submit">إلغاء</button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="muted text-sm mb-0">لا توجد طلبات شحن رصيد.</p>
+      {% endif %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

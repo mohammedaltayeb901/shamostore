@@ -1,0 +1,70 @@
+{% extends "admin/base.html" %}
+
+{% block title %}طلبات شحن الرصيد — {{ store_name }}{% endblock %}
+{% block admin_title %}طلبات شحن الرصيد{% endblock %}
+{% block admin_sub %}تحقق من التحويل ثم اقبل الطلب لإضافة الرصيد، أو ارفضه.{% endblock %}
+
+{% block admin_content %}
+<div class="tabs">
+  <a class="tab {% if not active_status %}is-active{% endif %}" href="{{ url_for('admin.topups') }}">الكل</a>
+  {% for key, label in statuses.items() %}
+    <a class="tab {% if active_status == key %}is-active{% endif %}" href="{{ url_for('admin.topups', status=key) }}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+{% if topups %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>الطلب</th>
+          <th>العميل</th>
+          <th>المبلغ</th>
+          <th>طريقة الدفع</th>
+          <th>المرجع</th>
+          <th>الحالة</th>
+          <th>إجراء</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for topup in topups %}
+          <tr>
+            <td>
+              <b class="num">#{{ topup.id }}</b><br>
+              <span class="text-sm faint">{{ topup.created_at|datetime }}</span>
+            </td>
+            <td>
+              {{ topup.user.username }}<br>
+              <span class="text-sm faint">{{ topup.user.email }}</span>
+            </td>
+            <td class="num">{{ topup.amount|money }}</td>
+            <td>{{ topup.method_label }}</td>
+            <td class="muted">
+              {{ topup.reference }}
+              {% if topup.note %}<div class="text-sm faint">{{ topup.note }}</div>{% endif %}
+            </td>
+            <td>
+              <span class="chip chip--{{ {'approved': 'success', 'rejected': 'danger', 'pending': 'warning'}.get(topup.status, '') }}">{{ topup.status_label }}</span>
+              {% if topup.reviewer %}<div class="text-sm faint mt-8">بواسطة {{ topup.reviewer.username }}</div>{% endif %}
+            </td>
+            <td>
+              {% if topup.status == 'pending' %}
+                <form method="post" action="{{ url_for('admin.review_topup', topup_id=topup.id) }}" class="inline-form">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input class="input" name="admin_note" placeholder="ملاحظة" style="width: 110px">
+                  <button class="btn btn--sm btn--primary" type="submit" name="action" value="approve">قبول</button>
+                  <button class="btn btn--sm btn--danger" type="submit" name="action" value="reject">رفض</button>
+                </form>
+              {% else %}
+                <span class="text-sm faint">{{ topup.admin_note or '—' }}</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="empty">لا توجد طلبات شحن رصيد.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}شحن الرصيد — {{ store_name }}{% endblock %}
+
+{% block content %}
+<div class="split">
+  <form method="post" class="card">
+    {{ form.hidden_tag() }}
+    <div class="card__head">
+      <h2>شحن المحفظة</h2>
+      <span class="text-sm muted">مراجعة يدوية خلال دقائق</span>
+    </div>
+
+    <div class="amount-chips">
+      {% for value in [5, 10, 20, 50, 100] %}
+        <button class="amount-chip" type="button" data-amount-chip="{{ value }}">{{ currency_symbol }}{{ value }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="field">
+      <label for="amount">المبلغ المطلوب</label>
+      <input class="input" type="number" id="amount" name="amount" min="1" max="5000" step="0.01"
+             value="{{ form.amount.data or '' }}" placeholder="10.00" required>
+      {% if form.amount.errors %}
+        <ul class="errors">{% for error in form.amount.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      {% endif %}
+      <span class="hint">الحد الأدنى {{ currency_symbol }}1 والأعلى {{ currency_symbol }}5000.</span>
+    </div>
+
+    <div class="field">
+      <label>طريقة الدفع</label>
+      <div class="method-grid">
+        {% for option in form.method %}
+          <label class="method">
+            {{ option() }}
+            <span class="method__box">{{ option.label.text }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      {% if form.method.errors %}
+        <ul class="errors">{% for error in form.method.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      {% endif %}
+    </div>
+
+    <div class="note-box" data-method-note>
+      اختر طريقة الدفع لعرض تفاصيل الحساب الذي تُرسل إليه.
+    </div>
+
+    <div class="field mt-16">
+      <label for="reference">رقم العملية / المرجع</label>
+      <input class="input" id="reference" name="reference" required minlength="3" maxlength="64"
+             value="{{ form.reference.data or '' }}" placeholder="مثال: 8821345">
+      {% if form.reference.errors %}
+        <ul class="errors">{% for error in form.reference.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      {% endif %}
+    </div>
+
+    <div class="field">
+      <label for="note">ملاحظات إضافية (اختياري)</label>
+      <textarea class="textarea" id="note" name="note" maxlength="500" placeholder="اسم المرسل أو أي تفاصيل تساعدنا في التأكيد">{{ form.note.data or '' }}</textarea>
+    </div>
+
+    <button class="btn btn--primary btn--block" type="submit">إرسال طلب الشحن</button>
+  </form>
+
+  <aside class="sticky-panel stack">
+    <div class="balance-card">
+      <span class="balance-card__label">رصيدك الحالي</span>
+      <div class="balance-card__amount">{{ current_user.available_balance|money }}</div>
+      <p class="text-sm muted mb-0">يُضاف المبلغ إلى هذا الرصيد بعد مراجعة طلبك.</p>
+    </div>
+
+    <div class="card card--flat">
+      <div class="panel-title">كيف يتم الشحن؟</div>
+      <div class="kv">
+        <div class="kv__row"><span>1</span><b>أرسل المبلغ بالطريقة التي تختارها</b></div>
+        <div class="kv__row"><span>2</span><b>أدخل رقم العملية في النموذج</b></div>
+        <div class="kv__row"><span>3</span><b>يُضاف الرصيد بعد التأكيد</b></div>
+      </div>
+      <p class="text-sm muted mt-16 mb-0">
+        لا تُشارك كلمة المرور أو رمز التحقق مع أي شخص. فريق الدعم لا يطلبها أبداً.
+      </p>
+    </div>
+  </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (() => {
+    const instructions = {{ topup_instructions|tojson }};
+    const note = document.querySelector('[data-method-note]');
+    const radios = document.querySelectorAll('input[name="method"]');
+    const sync = () => {
+      const chosen = document.querySelector('input[name="method"]:checked');
+      note.textContent = chosen && instructions[chosen.value]
+        ? instructions[chosen.value]
+        : 'اختر طريقة الدفع لعرض تفاصيل الحساب الذي تُرسل إليه.';
+    };
+    radios.forEach((radio) => radio.addEventListener('change', sync));
+    sync();
+  })();
+</script>
+{% endblock %}

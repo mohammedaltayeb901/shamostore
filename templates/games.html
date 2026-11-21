@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_macros.html" import cover %}
+
+{% block title %}الألعاب — {{ store_name }}{% endblock %}
+
+{% block content %}
+<div class="section__head">
+  <div>
+    <h1 style="font-size: 28px; margin: 0;">كل الألعاب</h1>
+    <p>اختر اللعبة لعرض باقات الشحن المتاحة.</p>
+  </div>
+</div>
+
+<div class="tabs">
+  <a class="tab {% if not active_category %}is-active{% endif %}" href="{{ url_for('shop.games') }}">الكل</a>
+  {% for key, label in categories.items() %}
+    <a class="tab {% if active_category == key %}is-active{% endif %}" href="{{ url_for('shop.games', category=key) }}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+{% if games %}
+  <div class="game-grid">
+    {% for game in games %}
+      <a class="game-card" href="{{ url_for('shop.game_detail', slug=game.slug) }}">
+        {{ cover(game) }}
+        <div class="game-card__body">
+          <h3>{{ game.name }}</h3>
+          <p>{{ game.tagline or game.currency_name }}</p>
+          <div class="game-card__foot">
+            <span class="price">{{ game.cheapest_price|money }}</span>
+            <span class="chip">{{ game.active_packages|length }} باقة</span>
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty">لا توجد ألعاب في هذه الفئة حالياً.</div>
+{% endif %}
+{% endblock %}

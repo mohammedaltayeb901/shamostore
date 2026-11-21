@@ -1,0 +1,91 @@
+{% extends "admin/base.html" %}
+
+{% block title %}لوحة التحكم — {{ store_name }}{% endblock %}
+{% block admin_title %}نظرة عامة{% endblock %}
+{% block admin_sub %}مؤشرات المتجر اليوم وطلبات تحتاج إجراءً.{% endblock %}
+
+{% block admin_content %}
+<div class="stat-grid">
+  <div class="stat"><span>إجمالي المستخدمين</span><b>{{ stats.users }}</b></div>
+  <div class="stat"><span>إجمالي الطلبات</span><b>{{ stats.orders }}</b></div>
+  <div class="stat"><span>قيمة الطلبات</span><b>{{ stats.revenue|money }}</b></div>
+  <div class="stat"><span>أرصدة المحافظ</span><b>{{ stats.wallet_total|money }}</b></div>
+  <div class="stat"><span>طلبات قيد التنفيذ</span><b>{{ stats.pending_orders }}</b></div>
+  <div class="stat"><span>طلبات شحن معلّقة</span><b>{{ stats.pending_topups }}</b></div>
+</div>
+
+<div class="admin-block card">
+  <div class="card__head">
+    <h2>أحدث الطلبات</h2>
+    <a class="link-more" href="{{ url_for('admin.orders') }}">كل الطلبات ←</a>
+  </div>
+  {% if recent_orders %}
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>الطلب</th><th>العميل</th><th>الباقة</th><th>المبلغ</th><th>الحالة</th><th>التاريخ</th></tr>
+        </thead>
+        <tbody>
+          {% for order in recent_orders %}
+            <tr>
+              <td class="num">{{ order.code }}</td>
+              <td>{{ order.user.username }}</td>
+              <td>{{ order.game_name }} — {{ order.package_label }}</td>
+              <td class="num">{{ order.price|money }}</td>
+              <td>
+                <span class="chip chip--{{ {'completed': 'success', 'processing': 'info', 'pending': 'warning', 'rejected': 'danger'}.get(order.status, '') }}">{{ order.status_label }}</span>
+              </td>
+              <td class="muted">{{ order.created_at|datetime }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty">لا توجد طلبات بعد.</div>
+  {% endif %}
+</div>
+
+<div class="admin-block" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px">
+  <div class="card">
+    <div class="card__head">
+      <h2>طلبات شحن بانتظار المراجعة</h2>
+      <a class="link-more" href="{{ url_for('admin.topups') }}">الكل ←</a>
+    </div>
+    {% if recent_topups %}
+      <div class="stack">
+        {% for topup in recent_topups %}
+          <div class="kv__row">
+            <div>
+              <b>{{ topup.user.username }}</b><br>
+              <span class="text-sm faint">{{ topup.method_label }} · {{ topup.reference }}</span>
+            </div>
+            <div style="text-align: end">
+              <b class="num">{{ topup.amount|money }}</b><br>
+              <span class="text-sm faint">{{ topup.created_at|datetime }}</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-sm muted mb-0">لا توجد طلبات معلّقة.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card__head"><h2>الأكثر مبيعاً</h2></div>
+    {% if top_packages %}
+      <div class="stack">
+        {% for game_name, package_label, sold in top_packages %}
+          <div class="kv__row">
+            <span>{{ game_name }} — {{ package_label }}</span>
+            <b>{{ sold }} طلب</b>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-sm muted mb-0">لا توجد مبيعات بعد.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

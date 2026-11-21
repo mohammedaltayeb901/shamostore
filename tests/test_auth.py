@@ -1,0 +1,78 @@
+from conftest import admin_login, login, register
+from models import User
+from extensions import db
+
+
+def test_register_creates_user_with_hashed_password(client):
+    response = register(client)
+    assert response.status_code == 200
+
+    user = User.query.filter_by(email="tester@example.com").first()
+    assert user is not None
+    assert user.username == "tester"
+    assert user.password_hash != "Password123"
+    assert user.check_password("Password123")
+    assert user.balance == 0
+
+
+def test_register_rejects_duplicate_email(client):
+    register(client)
+    client.post("/logout")
+    response = register(client, username="other")
+    assert "مسجل بالفعل" in response.get_data(as_text=True)
+    assert User.query.filter_by(email="tester@example.com").count() == 1
+
+
+def test_register_rejects_short_password(client):
+    register(client, password="short")
+    assert User.query.filter_by(email="tester@example.com").first() is None
+
+
+def test_login_with_email_and_password(client):
+    register(client)
+    from conftest import logout
+
+    logout(client)
+
+    bad = client.post("/login", data={"email": "tester@example.com", "password": "wrong-pass"})
+    assert bad.status_code == 401
+
+    good = client.post(
+        "/login",
+        data={"email": "tester@example.com", "password": "Password123"},
+        follow_redirects=True,
+    )
+    assert good.status_code == 200
+    assert "مرحباً بعودتك" in good.get_data(as_text=True)
+
+
+def test_login_is_case_insensitive_for_email(client):
+    register(client)
+    client.post("/logout")
+    response = login(client, email="TESTER@EXAMPLE.COM")
+    assert response.status_code == 200
+
+
+def test_protected_page_requires_login(client):
+    response = client.get("/wallet", follow_redirects=True)
+    assert "تسجيل الدخول" in response.get_data(as_text=True)
+
+
+def test_admin_area_is_forbidden_for_customers(seeded_client):
+    seeded_client.post(
+        "/register",
+        data={
+            "username": "shopper",
+            "email": "shopper@example.com",
+            "password": "Password123",
+            "confirm_password": "Password123",
+        },
+    )
+    response = seeded_client.get("/admin/", follow_redirects=True)
+    assert "مخصصة لمسؤولي المتجر" in response.get_data(as_text=True)
+
+
+def test_admin_can_open_dashboard(admin_client):
+    response = admin_client.get("/admin/")
+    assert response.status_code == 200
+    assert "نظرة عامة" in response.get_data(as_text=True)
