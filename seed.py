@@ -238,5 +238,6 @@ if __name__ == "__main__":
     application = create_app()
     with application.app_context():
         init_database(application)
-        seed_demo(application)
+        if application.config.get("ENABLE_DEMO_ACCOUNT", True):
+            seed_demo(application)
         print("Seed complete.")

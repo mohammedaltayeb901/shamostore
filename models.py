@@ -4,6 +4,7 @@ from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 
 from flask_login import UserMixin
+from sqlalchemy import func
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from extensions import db, login_manager
@@ -108,16 +109,20 @@ class User(UserMixin, db.Model):
         serialises the writes and the overspend guard fails the second one.
         """
         amount = to_money(amount)
+        # SQLite stores NUMERIC as a double, so the sum is rounded to cents in
+        # SQL as well. Without it, 0.70 + 0.10 reads as 0.7999999999999999 and a
+        # purchase of exactly 0.80 would be refused as insufficient.
+        new_balance_sql = func.round(User.balance + amount, 2)
         updated = (
             db.session.query(User)
-            .filter(User.id == self.id, User.balance + amount >= 0)
-            .update({User.balance: User.balance + amount}, synchronize_session=False)
+            .filter(User.id == self.id, new_balance_sql >= 0)
+            .update({User.balance: new_balance_sql}, synchronize_session=False)
         )
         if updated != 1:
             raise InsufficientBalance
 
         db.session.expire(self)
-        new_balance = self.available_balance
+        new_balance = to_money(self.available_balance)
         entry = WalletTransaction(
             user=self,
             amount=amount,

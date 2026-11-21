@@ -266,3 +266,20 @@ def test_admin_sees_customer_note_on_order(app, user, package):
     body = response.get_data(as_text=True)
     assert "5123456789" in body
     assert "سيرفر جينشين: Asia" in body
+
+
+def test_wallet_accepts_purchase_equal_to_float_summed_balance(app, user, package):
+    """0.70 + 0.10 must behave as exactly 0.80 (SQLite stores NUMERIC as a double)."""
+    user.wallet_move(Decimal("0.70"), "topup", "إيداع")
+    user.wallet_move(Decimal("0.10"), "topup", "إيداع")
+    db.session.commit()
+    assert user.available_balance == Decimal("0.80")
+
+    cheap = TopUpPackage(game=package.game, label="80 نقطة", price=Decimal("0.80"))
+    db.session.add(cheap)
+    db.session.commit()
+
+    order = place_order(user, cheap, "5123456789")
+    assert order.price == Decimal("0.80")
+    db.session.refresh(user)
+    assert user.available_balance == Decimal("0.00")

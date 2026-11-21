@@ -53,7 +53,9 @@ def create_app(config_class=Config):
 
     @app.template_filter("money")
     def money_filter(value):
-        amount = Decimal(str(value or 0))
+        amount = Decimal(str(value or 0)).quantize(Decimal("0.01"))
+        if amount == 0:
+            amount = Decimal("0.00")
         return f"{app.config['CURRENCY_SYMBOL']}{amount:,.2f}"
 
     @app.template_filter("datetime")
